@@ -1,0 +1,76 @@
+<html>
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12pt;
+            padding: 20px;
+        }
+        .title {
+            font-size: 18pt;
+            font-weight: bold;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .document-number {
+            font-size: 14pt;
+            text-align: center;
+            margin: 10px 0;
+        }
+        p {
+            margin: 5px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">{{ emisor.name }}</div>
+    <p> </p>
+    <p class="document-number">{{ document_type }} Número: {{ document_number }}</p>
+    <p>Documento Relacionado: {{ related_document_id }}</p>
+    <p>Emisor: RIF: {{ emisor.rif }}</p>
+    <p>Domicilio Fiscal: {{ emisor.fiscal_address }}</p>
+    <p>Receptor: {{ receptor.name }} - {% if receptor.rif %}RIF: {{ receptor.rif }}{% else %}Cédula: {{ receptor.id_number }}{% endif %}</p>
+    <p>Domicilio Fiscal: {{ receptor.fiscal_address }}</p>
+    <p>Fecha de Emisión: {{ issuance_date | replace("T", " ") | slice(0, 19) }}</p>
+    <p>Hora de Emisión: {{ issuance_time }}</p>
+    <p>Operaciones</p>
+    <table>
+        <tr>
+            <th>Descripción</th>
+            <th>Código</th>
+            <th>Precio</th>
+            <th>Cantidad</th>
+            <th>Total</th>
+        </tr>
+        {% for op in operations %}
+        <tr>
+            <td>{{ op.description }} {% if op.is_exempt %}(E){% endif %}</td>
+            <td>{{ op.code }}</td>
+            <td>{{ op.price }}</td>
+            <td>{{ op.quantity or 'N/A' }}</td>
+            <td>{{ (op.price * (op.quantity or 1)) * -1 }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <p>Base Imponible IVA: {{ vat_base_amounts }}</p>
+    <p>Monto Exento: {{ total_exempt_amount }}</p>
+    <p>IVA: {{ vat_amounts }}</p>
+    <p>Total: {{ total_value }}</p>
+    <p>Número de Control: {{ control_number }}</p>
+    <p>Imprenta Digital: {{ digital_printer.name }} - RIF: {{ digital_printer.rif }}</p>
+    <p>Autorización: {{ digital_printer.authorization_nomenclature }} - {{ digital_printer.authorization_date | replace("T", " ") | slice(0, 19) }}</p>
+</body>
+</html>

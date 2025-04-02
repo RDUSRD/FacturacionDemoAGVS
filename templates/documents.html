@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Consultar Documentos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Consultar Documentos</h1>
+    <form action="/documents" method="get" class="search-form">
+        <div class="form-group">
+            <label for="document_type">Tipo de Documento:</label>
+            <select name="document_type">
+                <option value="">Todos</option>
+                <option value="factura">Factura</option>
+                <option value="debit_note">Nota de Débito</option>
+                <option value="credit_note">Nota de Crédito</option>
+                <option value="delivery_order">Orden de Entrega</option>
+                <option value="retention_receipt">Comprobante de Retención</option>
+            </select>
+
+            <label for="document_number">Número de Documento:</label>
+            <input type="number" name="document_number">
+
+            <label for="receptor_rif">RIF del Receptor:</label>
+            <input type="text" name="receptor_rif">
+        </div>
+
+        <button type="submit">Buscar</button>
+    </form>
+
+    <h2>Resultados</h2>
+    {% if documents %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Número</th>
+                    <th>Emisor</th>
+                    <th>Receptor</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>PDF</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr>
+                    <td>{{ doc.document_type }}</td>
+                    <td>{{ doc.document_number }}</td>
+                    <td>{{ doc.emisor.name }} ({{ doc.emisor.rif }})</td>
+                    <td>{{ doc.receptor.name }} ({{ doc.receptor.rif or doc.receptor.id_number }})</td>
+                    <td>{{ doc.issuance_date.strftime('%d%m%Y') }}</td>
+                    <td>{{ doc.issuance_time }}</td>
+                    <td><a href="/documents/{{ doc.document_type }}_{{ doc.document_number }}.pdf" target="_blank">Ver</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No se encontraron documentos.</p>
+    {% endif %}
+    <a href="/" class="back-link">Volver al Menú</a>
+</body>
+</html>

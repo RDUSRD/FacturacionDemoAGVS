@@ -1,0 +1,42 @@
+<html>
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12pt;
+            padding: 20px;
+        }
+        .title {
+            font-size: 18pt;
+            font-weight: bold;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .document-number {
+            font-size: 14pt;
+            text-align: center;
+            margin: 10px 0;
+        }
+        p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">{{ emisor.name }}</div>
+    <p> </p>
+    <p class="document-number">{{ document_type }} Número: {{ document_number }}</p>
+    <p>Documento Relacionado: {{ related_document_id }}</p>
+    <p>Emisor: RIF: {{ emisor.rif }}</p>
+    <p>Domicilio Fiscal: {{ emisor.fiscal_address }}</p>
+    <p>Receptor: {{ receptor.name }} - {% if receptor.rif %}RIF: {{ receptor.rif }}{% else %}Cédula: {{ receptor.id_number }}{% endif %}</p>
+    <p>Domicilio Fiscal: {{ receptor.fiscal_address }}</p>
+    <p>Fecha de Emisión: {{ issuance_date | replace("T", " ") | slice(0, 19) }}</p>
+    <p>Hora de Emisión: {{ issuance_time }}</p>
+    <p>Tipo de Impuesto: {{ tax_type }}</p>
+    <p>Monto Retenido: {{ retained_amount }}</p>
+    <p>Número de Control: {{ control_number }}</p>
+    <p>Imprenta Digital: {{ digital_printer.name }} - RIF: {{ digital_printer.rif }}</p>
+    <p>Autorización: {{ digital_printer.authorization_nomenclature }} - {{ digital_printer.authorization_date | replace("T", " ") | slice(0, 19) }}</p>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crear Orden de Entrega</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/scripts.js"></script>
+</head>
+<body>
+    <h1>Crear Orden de Entrega</h1>
+    <form onsubmit="submitForm(event, 'delivery_orders'); return false;">
+        <h3>Receptor</h3>
+        <div class="form-group">
+            <input type="text" name="receptor_name" placeholder="Nombre" required>
+            <input type="text" name="receptor_fiscal_address" placeholder="Domicilio Fiscal" required>
+            <input type="text" name="receptor_rif" placeholder="RIF">
+            <input type="text" name="receptor_id_number" placeholder="Cédula/Pasaporte">
+        </div>
+
+        <h3>Detalles</h3>
+        <div class="form-group">
+            <input type="datetime-local" name="issuance_date" required>
+            <input type="text" name="issuance_time" placeholder="HH.MM.SS AM/PM" required>
+            <input type="number" name="digital_printer_id" value="1" hidden>
+        </div>
+
+        <h3>Bienes Entregados</h3>
+        <div id="goods_delivered"></div>
+        <button type="button" onclick="addGood('goods_delivered')">Añadir Bien</button>
+        <button type="submit">Crear Orden de Entrega</button>
+    </form>
+    {% if default_emisor %}
+    <p>Emisor: {{ default_emisor.name }} - RIF: {{ default_emisor.rif }}</p>
+    <p>Domicilio Fiscal: {{ default_emisor.fiscal_address }}</p>
+    {% endif %}
+    <a href="/" class="back-link">Volver al Menú</a>
+</body>
+</html>

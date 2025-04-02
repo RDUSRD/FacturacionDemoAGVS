@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registro de Auditoría</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Registro de Auditoría</h1>
+    {% if audit_logs %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tipo de Transacción</th>
+                    <th>Fecha y Hora</th>
+                    <th>IP del Cliente</th>
+                    <th>Datos de la Transacción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in audit_logs %}
+                <tr>
+                    <td>{{ log.id }}</td>
+                    <td>{{ log.transaction_type }}</td>
+                    <td>{{ log.transaction_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                    <td>{{ log.client_ip }}</td>
+                    <td>{{ log.transaction_data | tojson }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No hay registros de auditoría disponibles.</p>
+    {% endif %}
+    <a href="/" class="back-link">Volver al Menú</a>
+</body>
+</html>

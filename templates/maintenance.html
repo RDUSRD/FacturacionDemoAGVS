@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mantenimiento</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/scripts.js"></script>
+</head>
+<body>
+    <h1>Mantenimiento</h1>
+    <h2>Modificar Emisor Predeterminado</h2>
+    <form action="/maintenance/update_emisor" method="post" onsubmit="submitMaintenanceForm(event); return false;">
+        <div class="form-group">
+            <label for="name">Nombre:</label>
+            <input type="text" name="name" value="{{ default_emisor.name if default_emisor else '' }}" required>
+            <label for="fiscal_address">Domicilio Fiscal:</label>
+            <input type="text" name="fiscal_address" value="{{ default_emisor.fiscal_address if default_emisor else '' }}" required>
+            <label for="rif">RIF:</label>
+            <input type="text" name="rif" value="{{ default_emisor.rif if default_emisor else '' }}" required>
+        </div>
+        <button type="submit">Actualizar Emisor</button>
+    </form>
+    {% if message %}
+    <p class="success-message">{{ message }}</p>
+    {% endif %}
+    <a href="/" class="back-link">Volver al Menú</a>
+</body>
+</html>
