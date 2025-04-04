@@ -1,3 +1,20 @@
+"""
+schemas.py
+This module defines the Pydantic schemas for request validation and response serialization.
+
+Schemas:
+- EmisorBase, ReceptorBase: Base schemas for issuers and recipients.
+- FacturaCreate, DebitNoteCreate, CreditNoteCreate, etc.: Schemas for creating specific document types.
+- DocumentResponse: Schema for returning document data.
+- DefaultEmisorSchema: Schema for managing the default issuer.
+- AuditLogSchema: Schema for audit log entries.
+
+Dependencies:
+- pydantic: For data validation and serialization.
+- datetime: For date and time fields.
+- typing: For type annotations.
+"""
+
 from pydantic import BaseModel, validator, Field
 from datetime import datetime
 from typing import Literal, Optional, List, Dict

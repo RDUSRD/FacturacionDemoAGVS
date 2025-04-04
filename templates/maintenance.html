@@ -1,28 +1,62 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Mantenimiento</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/styles.css" />
     <script src="/static/scripts.js"></script>
-</head>
-<body>
-    <h1>Mantenimiento</h1>
-    <h2>Modificar Emisor Predeterminado</h2>
-    <form action="/maintenance/update_emisor" method="post" onsubmit="submitMaintenanceForm(event); return false;">
-        <div class="form-group">
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <h2>Información del Usuario</h2>
+        <section class="user-info">
+          <p><strong>Email:</strong> {{ user_info.email }}</p>
+          <p><strong>Username:</strong> {{ user_info.preferred_username }}</p>
+          <p><strong>Groups:</strong> {{ user_info.groups }}</p>
+          <p><strong>Rif:</strong> {{ user_info.rif }}</p>
+          <p><strong>Id:</strong> {{ user_info.cedula }}</p>
+          <p><strong>Tlf:</strong> {{ user_info.telefono }}</p>
+        </section>
+      </aside>
+      <main class="content">
+        <h1>Mantenimiento</h1>
+        <h2>Modificar Emisor Predeterminado</h2>
+        <form
+          action="/maintenance/update_emisor"
+          method="post"
+          onsubmit="submitMaintenanceForm(event); return false;"
+        >
+          <div class="form-group">
             <label for="name">Nombre:</label>
-            <input type="text" name="name" value="{{ default_emisor.name if default_emisor else '' }}" required>
+            <input
+              type="text"
+              name="name"
+              value="{{ default_emisor.name if default_emisor else '' }}"
+              required
+            />
             <label for="fiscal_address">Domicilio Fiscal:</label>
-            <input type="text" name="fiscal_address" value="{{ default_emisor.fiscal_address if default_emisor else '' }}" required>
+            <input
+              type="text"
+              name="fiscal_address"
+              value="{{ default_emisor.fiscal_address if default_emisor else '' }}"
+              required
+            />
             <label for="rif">RIF:</label>
-            <input type="text" name="rif" value="{{ default_emisor.rif if default_emisor else '' }}" required>
-        </div>
-        <button type="submit">Actualizar Emisor</button>
-    </form>
-    {% if message %}
-    <p class="success-message">{{ message }}</p>
-    {% endif %}
-    <a href="/" class="back-link">Volver al Menú</a>
-</body>
+            <input
+              type="text"
+              name="rif"
+              value="{{ default_emisor.rif if default_emisor else '' }}"
+              required
+            />
+          </div>
+          <button type="submit">Actualizar Emisor</button>
+        </form>
+        {% if message %}
+        <p class="success-message">{{ message }}</p>
+        {% endif %}
+        <a href="/dashboard" class="button back-link">Volver al Menú</a>
+      </main>
+    </div>
+  </body>
 </html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Emisión de Documentos</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <h2>Información del Usuario</h2>
+        <section class="user-info">
+          <p><strong>Email:</strong> {{ user_info.email }}</p>
+          <p><strong>Username:</strong> {{ user_info.preferred_username }}</p>
+          <p><strong>Groups:</strong> {{ user_info.groups }}</p>
+          <p><strong>Rif:</strong> {{ user_info.rif }}</p>
+          <p><strong>Id:</strong> {{ user_info.cedula }}</p>
+          <p><strong>Tlf:</strong> {{ user_info.telefono }}</p>
+        </section>
+      </aside>
+      <main class="content">
+        <div class="container">
+          <header>
+            <h1>Sistema de Emisión de Documentos</h1>
+            <p>Bienvenido, {{ user_info.preferred_username }}!</p>
+          </header>
+          <nav>
+            <ul>
+              <li><a href="/factura" class="button">Crear Factura</a></li>
+              <li><a href="/debit_note" class="button">Crear Nota de Débito</a></li>
+              <li><a href="/credit_note" class="button">Crear Nota de Crédito</a></li>
+              <li><a href="/delivery_order" class="button">Crear Orden de Entrega</a></li>
+              <li><a href="/retention_receipt" class="button">Crear Comprobante de Retención</a></li>
+              <li><a href="/documents" class="button">Consultar Documentos</a></li>
+              <li><a href="/maintenance" class="button">Mantenimiento</a></li>
+              <li><a href="/audit_logs" class="button">Registro de Auditoría</a></li>
+              <li><a href="/logout" class="button">Logout</a></li>
+              <li><a href="/logout-authentik" class="button">Logout from Authentik</a></li>
+            </ul>
+          </nav>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,40 +1,55 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Registro de Auditoría</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-    <h1>Registro de Auditoría</h1>
-    {% if audit_logs %}
-    <div class="table-container">
-        <table>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <h2>Información del Usuario</h2>
+        <section class="user-info">
+          <p><strong>Email:</strong> {{ user_info.email }}</p>
+          <p><strong>Username:</strong> {{ user_info.preferred_username }}</p>
+          <p><strong>Groups:</strong> {{ user_info.groups }}</p>
+          <p><strong>Rif:</strong> {{ user_info.rif }}</p>
+          <p><strong>Id:</strong> {{ user_info.cedula }}</p>
+          <p><strong>Tlf:</strong> {{ user_info.telefono }}</p>
+        </section>
+      </aside>
+      <main class="content">
+        <h1>Registro de Auditoría</h1>
+        {% if audit_logs %}
+        <div class="table-container">
+          <table>
             <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Tipo de Transacción</th>
-                    <th>Fecha y Hora</th>
-                    <th>IP del Cliente</th>
-                    <th>Datos de la Transacción</th>
-                </tr>
+              <tr>
+                <th>ID</th>
+                <th>Tipo de Transacción</th>
+                <th>Fecha y Hora</th>
+                <th>IP del Cliente</th>
+                <th>Datos de la Transacción</th>
+              </tr>
             </thead>
             <tbody>
-                {% for log in audit_logs %}
-                <tr>
-                    <td>{{ log.id }}</td>
-                    <td>{{ log.transaction_type }}</td>
-                    <td>{{ log.transaction_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-                    <td>{{ log.client_ip }}</td>
-                    <td>{{ log.transaction_data | tojson }}</td>
-                </tr>
-                {% endfor %}
+              {% for log in audit_logs %}
+              <tr>
+                <td>{{ log.id }}</td>
+                <td>{{ log.transaction_type }}</td>
+                <td>{{ log.transaction_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                <td>{{ log.client_ip }}</td>
+                <td>{{ log.transaction_data | tojson }}</td>
+              </tr>
+              {% endfor %}
             </tbody>
-        </table>
+          </table>
+        </div>
+        {% else %}
+        <p>No hay registros de auditoría disponibles.</p>
+        {% endif %}
+        <a href="/dashboard" class="button back-link">Volver al Menú</a>
+      </main>
     </div>
-    {% else %}
-    <p>No hay registros de auditoría disponibles.</p>
-    {% endif %}
-    <a href="/" class="back-link">Volver al Menú</a>
-</body>
+  </body>
 </html>

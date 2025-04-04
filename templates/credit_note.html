@@ -1,39 +1,78 @@
 <!DOCTYPE html>
-<html>
-<head>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Crear Nota de Crédito</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/styles.css" />
     <script src="/static/scripts.js"></script>
-</head>
-<body>
-    <h1>Crear Nota de Crédito</h1>
-    <form onsubmit="submitForm(event, 'credit_notes'); return false;">
-        <h3>Receptor</h3>
-        <div class="form-group">
-            <input type="text" name="receptor_name" placeholder="Nombre" required>
-            <input type="text" name="receptor_fiscal_address" placeholder="Domicilio Fiscal" required>
-            <input type="text" name="receptor_rif" placeholder="RIF">
-            <input type="text" name="receptor_id_number" placeholder="Cédula/Pasaporte">
-        </div>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <h2>Información del Usuario</h2>
+        <section class="user-info">
+          <p><strong>Email:</strong> {{ user_info.email }}</p>
+          <p><strong>Username:</strong> {{ user_info.preferred_username }}</p>
+          <p><strong>Groups:</strong> {{ user_info.groups }}</p>
+          <p><strong>Rif:</strong> {{ user_info.rif }}</p>
+          <p><strong>Id:</strong> {{ user_info.cedula }}</p>
+          <p><strong>Tlf:</strong> {{ user_info.telefono }}</p>
+        </section>
+      </aside>
+      <main class="content">
+        <div class="container">
+          <h1>Crear Nota de Crédito</h1>
+          <form onsubmit="submitForm(event, 'credit_notes'); return false;">
+            <h3>Receptor</h3>
+            <div class="form-group">
+              <input type="text" name="receptor_name" placeholder="Nombre" required />
+              <input
+                type="text"
+                name="receptor_fiscal_address"
+                placeholder="Domicilio Fiscal"
+                required
+              />
+              <input type="text" name="receptor_rif" placeholder="RIF" />
+              <input
+                type="text"
+                name="receptor_id_number"
+                placeholder="Cédula/Pasaporte"
+              />
+            </div>
 
-        <h3>Detalles</h3>
-        <div class="form-group">
-            <input type="datetime-local" name="issuance_date" required>
-            <input type="text" name="issuance_time" placeholder="HH.MM.SS AM/PM" required>
-            <input type="number" name="related_document_id" placeholder="ID del Documento Relacionado" required>
-            <input type="number" name="digital_printer_id" value="1" hidden>
-        </div>
+            <h3>Detalles</h3>
+            <div class="form-group">
+              <input type="datetime-local" name="issuance_date" required />
+              <input
+                type="text"
+                name="issuance_time"
+                placeholder="HH.MM.SS AM/PM"
+                required
+              />
+              <input
+                type="number"
+                name="related_document_id"
+                placeholder="ID del Documento Relacionado"
+                required
+              />
+              <input type="number" name="digital_printer_id" value="1" hidden />
+            </div>
 
-        <h3>Operaciones</h3>
-        <div id="credit_operations"></div>
-        <button type="button" onclick="addOperation('credit_operations')">Añadir Operación</button>
-        <button type="submit">Crear Nota de Crédito</button>
-    </form>
-    {% if default_emisor %}
-    <p>Emisor: {{ default_emisor.name }} - RIF: {{ default_emisor.rif }}</p>
-    <p>Domicilio Fiscal: {{ default_emisor.fiscal_address }}</p>
-    {% endif %}
-    <a href="/" class="back-link">Volver al Menú</a>
-</body>
+            <h3>Operaciones</h3>
+            <div id="credit_operations"></div>
+            <button type="button" onclick="addOperation('credit_operations')">
+              Añadir Operación
+            </button>
+            <button type="submit">Crear Nota de Crédito</button>
+          </form>
+          {% if default_emisor %}
+          <p>Emisor: {{ default_emisor.name }} - RIF: {{ default_emisor.rif }}</p>
+          <p>Domicilio Fiscal: {{ default_emisor.fiscal_address }}</p>
+          {% endif %}
+          <a href="/dashboard" class="button back-link">Volver al Menú</a>
+        </div>
+      </main>
+    </div>
+  </body>
 </html>

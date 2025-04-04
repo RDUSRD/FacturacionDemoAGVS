@@ -1,3 +1,22 @@
+"""
+models.py
+This module defines the database models for the application using SQLAlchemy ORM.
+
+Models:
+- Emisor: Represents the issuer of documents.
+- Receptor: Represents the recipient of documents.
+- DigitalPrinter: Represents a digital printing entity.
+- DocumentNumberSequence: Tracks document number sequences.
+- DefaultEmisor: Stores the default issuer.
+- AuditLog: Logs audit entries.
+- Document: Base polymorphic model for all documents.
+- Factura, DebitNote, CreditNote, DeliveryOrder, RetentionReceipt: Specific document types inheriting from Document.
+
+Dependencies:
+- sqlalchemy: For ORM and database modeling.
+- database.Base: Base class for SQLAlchemy models.
+"""
+
 from sqlalchemy import Column, Integer, String, ForeignKey, Float, DateTime, Boolean, JSON, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import expression
