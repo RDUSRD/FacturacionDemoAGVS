@@ -65,9 +65,7 @@ async def oauth_callback(request: Request):
     device = getattr(request.state, "device", "UnknownDevice")
     ip = getattr(request.state, "ip", "UnknownIP")
     expected_state = request.session.get("oauth_state")
-    print(f"Expected state: {expected_state}")
     received_state = request.query_params.get("state")
-    print(f"Received state: {received_state}")
     if not expected_state or expected_state != received_state:
         logger.error(
             "State parameter mismatch in callback",
@@ -94,8 +92,11 @@ async def oauth_callback(request: Request):
 @router.get("/logout")
 async def logout(request: Request):
     request_info = get_request_info(request)
+    request.session.clear()  # Limpiar la sesión del usuario
+    # Eliminar la cookie de sesión para invalidar el token JWT
+    response = RedirectResponse(url="/")
     logger.info("Cierre de sesión local", extra={**request_info, "user": "Anonymous"})
-    return RedirectResponse(url="/")
+    return response
 
 
 @router.get("/logout-authentik")
