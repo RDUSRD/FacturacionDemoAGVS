@@ -7,9 +7,8 @@
 -- Comando para verificar la creación de las tablas:
 -- \dt
 
-
 -- Crear tabla EMPRESA
-CREATE TABLE empresa (
+CREATE TABLE IF NOT EXISTS empresa (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     rif VARCHAR(50) NOT NULL UNIQUE,
@@ -19,7 +18,7 @@ CREATE TABLE empresa (
 );
 
 -- Crear tabla CLIENTE
-CREATE TABLE cliente (
+CREATE TABLE IF NOT EXISTS cliente (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     rif VARCHAR(50) NOT NULL UNIQUE,
@@ -27,7 +26,7 @@ CREATE TABLE cliente (
 );
 
 -- Crear tabla DOCUMENTO
-CREATE TABLE documento (
+CREATE TABLE IF NOT EXISTS documento (
     id SERIAL PRIMARY KEY,
     tipo_documento VARCHAR(50) NOT NULL,
     numero_control VARCHAR(50) NOT NULL UNIQUE,
@@ -39,7 +38,7 @@ CREATE TABLE documento (
 );
 
 -- Crear tabla FACTURA
-CREATE TABLE factura (
+CREATE TABLE IF NOT EXISTS factura (
     id SERIAL PRIMARY KEY,
     operaciones JSON NOT NULL,
     montos_base_iva JSON NOT NULL,
@@ -49,10 +48,18 @@ CREATE TABLE factura (
     documento_id INT NOT NULL REFERENCES documento(id) ON DELETE CASCADE
 );
 
--- Crear tabla DETALLE_FACTURA
-CREATE TABLE detalle_factura (
+-- Crear tabla PRODUCTO
+CREATE TABLE IF NOT EXISTS producto (
     id SERIAL PRIMARY KEY,
-    factura_id INT NOT NULL REFERENCES factura(id) ON DELETE CASCADE,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion TEXT NOT NULL,
+    precio DECIMAL(10, 2) NOT NULL
+);
+
+-- Crear tabla DETALLE_FACTURA
+CREATE TABLE IF NOT EXISTS detalle_factura (
+    id SERIAL PRIMARY KEY,
+    factura_id INT NOT NULL,
     producto_id INT NOT NULL REFERENCES producto(id) ON DELETE CASCADE,
     descripcion TEXT NOT NULL,
     precio DECIMAL(10, 2) NOT NULL,
@@ -60,16 +67,8 @@ CREATE TABLE detalle_factura (
     total DECIMAL(10, 2) NOT NULL
 );
 
--- Crear tabla PRODUCTO
-CREATE TABLE producto (
-    id SERIAL PRIMARY KEY,
-    codigo VARCHAR(50) NOT NULL UNIQUE,
-    descripcion TEXT NOT NULL,
-    precio DECIMAL(10, 2) NOT NULL
-);
-
 -- Crear tabla NOTA_DEBITO
-CREATE TABLE nota_debito (
+CREATE TABLE IF NOT EXISTS nota_debito (
     id SERIAL PRIMARY KEY,
     documento_relacionado_id INT NOT NULL REFERENCES documento(id) ON DELETE CASCADE,
     operaciones JSON NOT NULL,
@@ -80,7 +79,7 @@ CREATE TABLE nota_debito (
 );
 
 -- Crear tabla NOTA_CREDITO
-CREATE TABLE nota_credito (
+CREATE TABLE IF NOT EXISTS nota_credito (
     id SERIAL PRIMARY KEY,
     documento_relacionado_id INT NOT NULL REFERENCES documento(id) ON DELETE CASCADE,
     operaciones JSON NOT NULL,
@@ -91,14 +90,14 @@ CREATE TABLE nota_credito (
 );
 
 -- Crear tabla ORDEN_ENTREGA
-CREATE TABLE orden_entrega (
+CREATE TABLE IF NOT EXISTS orden_entrega (
     id SERIAL PRIMARY KEY,
     bienes_entregados JSON NOT NULL,
     documento_id INT NOT NULL REFERENCES documento(id) ON DELETE CASCADE
 );
 
 -- Crear tabla COMPROBANTE_RETENCION
-CREATE TABLE comprobante_retencion (
+CREATE TABLE IF NOT EXISTS comprobante_retencion (
     id SERIAL PRIMARY KEY,
     documento_relacionado_id INT NOT NULL REFERENCES documento(id) ON DELETE CASCADE,
     tipo_impuesto VARCHAR(50) NOT NULL,
@@ -106,7 +105,7 @@ CREATE TABLE comprobante_retencion (
 );
 
 -- Crear tabla AUDITORIA
-CREATE TABLE auditoria (
+CREATE TABLE IF NOT EXISTS auditoria (
     id SERIAL PRIMARY KEY,
     tabla_afectada VARCHAR(255) NOT NULL,
     registro_id INT NOT NULL,
