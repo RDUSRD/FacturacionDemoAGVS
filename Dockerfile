@@ -27,6 +27,8 @@ COPY . /app
 # Asegúrate de copiar el script wait-for-it.sh
 COPY wait-for-it.sh /app/wait-for-it.sh
 
+RUN ls -l /app/wait-for-it.sh
+
 # Haz que el script sea ejecutable
 RUN chmod +x /app/wait-for-it.sh
 
