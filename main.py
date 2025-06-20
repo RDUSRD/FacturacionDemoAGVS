@@ -3,14 +3,14 @@ main.py
 Este archivo es el punto de entrada para la aplicación FastAPI. Configura middleware, rutas y la inicialización de la base de datos.
 
 Características:
-- Middleware para gestión de sesiones y caché.
-- Servir archivos estáticos y plantillas.
-- Inicialización de datos predeterminados en la base de datos.
+- Configuración de middleware para servir archivos estáticos.
+- Registro de rutas para diferentes módulos de la aplicación.
+- Inicialización de la base de datos.
 
 Dependencias:
-- fastapi: Para construir la aplicación web.
-- sqlalchemy: Para interacción con la base de datos.
-- dotenv: Para gestión de variables de entorno.
+- fastapi: Framework para construir la aplicación web.
+- sqlalchemy: ORM para interacción con la base de datos.
+- dotenv: Para cargar variables de entorno desde un archivo .env.
 """
 
 from fastapi import FastAPI
@@ -42,17 +42,17 @@ app = FastAPI()
 app.mount("/documents", StaticFiles(directory="documents"), name="documents")
 app.mount("/static", StaticFiles(directory="static", html=True, check_dir=False), name="static")
 
-# Incluir routers
-app.include_router(empresa_router, prefix="/api/empresa")
-app.include_router(cliente_router, prefix="/api/cliente")
-app.include_router(documento_router, prefix="/api/documento")
-app.include_router(factura_router, prefix="/api/factura")
-app.include_router(nota_router, prefix="/api/nota")
-app.include_router(orden_entrega_router, prefix="/api/orden_entrega")
-app.include_router(comprobante_retencion_router, prefix="/api/comprobante_retencion")
-app.include_router(producto_router, prefix="/api/producto")
-app.include_router(detalle_factura_router, prefix="/api/detalle_factura")
-app.include_router(auditoria_router, prefix="/api/auditoria")
+# Incluir routers con tags para organización
+app.include_router(empresa_router)
+app.include_router(cliente_router)
+app.include_router(documento_router)
+app.include_router(factura_router)
+app.include_router(nota_router)
+app.include_router(orden_entrega_router)
+app.include_router(comprobante_retencion_router)
+app.include_router(producto_router)
+app.include_router(detalle_factura_router)
+app.include_router(auditoria_router)
 
 # Crear las tablas en la base de datos
 Base.metadata.create_all(bind=engine)

@@ -1,10 +1,42 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from src.producto.productoService import get_or_create_producto
+from src.producto.productoService import (
+    get_producto_by_id,
+    get_all_productos,
+    get_or_create_producto,
+    update_producto,
+    # delete_producto,
+)
+from src.producto.productoSchema import ProductoSchema, ProductoUpdateSchema
 
-router = APIRouter()
+router = APIRouter(prefix="/producto", tags=["Producto"])
 
-@router.post("/producto")
-def create_or_get_producto(producto_data: dict, db: Session = Depends(get_db)):
+@router.get("/")
+def get_productos(db: Session = Depends(get_db)):
+    return get_all_productos(db)
+
+@router.get("/{producto_id}")
+def get_producto(producto_id: int, db: Session = Depends(get_db)):
+    producto = get_producto_by_id(db, producto_id)
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return producto
+
+@router.post("/create")
+def create_or_get_producto_endpoint(producto_data: ProductoSchema, db: Session = Depends(get_db)):
     return get_or_create_producto(db, producto_data)
+
+@router.put("/{producto_id}")
+def update_producto_endpoint(producto_id: int, producto_data: ProductoUpdateSchema, db: Session = Depends(get_db)):
+    producto = update_producto(db, producto_id, producto_data)
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return producto
+
+# @router.delete("/{producto_id}")
+# def delete_producto_endpoint(producto_id: int, db: Session = Depends(get_db)):
+#     producto = delete_producto(db, producto_id)
+#     if not producto:
+#         raise HTTPException(status_code=404, detail="Producto no encontrado")
+#     return {"detail": "Producto eliminado correctamente"}
