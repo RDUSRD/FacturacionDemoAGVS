@@ -49,13 +49,3 @@ def update_detalle_factura(
         db.commit()
         db.refresh(detalle_factura)
     return detalle_factura
-
-
-# def delete_detalle_factura(db: Session, detalle_factura_id: int):
-#     detalle_factura = (
-#         db.query(DetalleFactura).filter(DetalleFactura.id == detalle_factura_id).first()
-#     )
-#     if detalle_factura:
-#         db.delete(detalle_factura)
-#         db.commit()
-#     return detalle_factura

@@ -12,7 +12,9 @@ class DetalleFactura(Base):
     cantidad = Column(Integer, nullable=False)  # Cambiado a Integer para representar cantidades enteras
     total = Column(DECIMAL(10, 2), nullable=False)
 
+    factura = relationship("Factura", back_populates="detalles")
     producto = relationship("Producto", back_populates="detalles_factura")
+    
 
     __table_args__ = (
         CheckConstraint("precio >= 0", name="check_precio_positive"),

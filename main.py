@@ -24,10 +24,12 @@ from dotenv import load_dotenv
 from src.empresa.empresaRouter import router as empresa_router
 from src.cliente.clienteRouter import router as cliente_router
 from src.documento.documentoRouter import router as documento_router
-from src.factura.facturaRouter import router as factura_router
-from src.notas.notaRouter import router as nota_router
-from src.orden_entrega.ordenEntregaRouter import router as orden_entrega_router
-from src.comprobante_retencion.comprobanteRetencionRouter import router as comprobante_retencion_router
+from src.documento.factura.facturaRouter import router as factura_router
+from src.documento.notas.notaRouter import router as nota_router
+from src.documento.orden_entrega.ordenEntregaRouter import router as orden_entrega_router
+from src.comprobante_retencion.comprobanteRetencionRouter import (
+    router as comprobante_retencion_router,
+)
 from src.producto.productoRouter import router as producto_router
 from src.detalleFactura.detalleFacturaRouter import router as detalle_factura_router
 from src.auditoria.audRouter import router as auditoria_router
@@ -36,11 +38,19 @@ from src.auditoria.audRouter import router as auditoria_router
 load_dotenv()
 
 # Configurar la aplicación FastAPI
-app = FastAPI()
+app = FastAPI(
+    description="API para la gestión de documentos y facturación",
+    title="API Facturacion AGV Services",
+    version="1.0.0",
+)
 
 # Middleware para servir archivos estáticos
 app.mount("/documents", StaticFiles(directory="documents"), name="documents")
-app.mount("/static", StaticFiles(directory="static", html=True, check_dir=False), name="static")
+app.mount(
+    "/static",
+    StaticFiles(directory="static", html=True, check_dir=False),
+    name="static",
+)
 
 # Incluir routers con tags para organización
 app.include_router(empresa_router)
@@ -59,4 +69,3 @@ Base.metadata.create_all(bind=engine)
 
 # Registrar un log al iniciar la aplicación
 app_logger.info("Aplicación FastAPI iniciada correctamente")
-

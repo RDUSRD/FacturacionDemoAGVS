@@ -12,19 +12,20 @@ def get_cliente_by_id(db: Session, cliente_id: int):
 
 
 def get_or_create_cliente(db: Session, cliente_data: ClienteSchema):
-    cliente = db.query(Cliente).filter(Cliente.rif == cliente_data["rif"]).first()
+    cliente = db.query(Cliente).filter(Cliente.rif == cliente_data.rif).first()
     if not cliente:
-        cliente = Cliente(**cliente_data)
+        cliente = Cliente(**cliente_data.model_dump())
         db.add(cliente)
         db.commit()
         db.refresh(cliente)
-    return cliente
+        return cliente
+    return {"message": "Cliente ya existe " + cliente.rif, "cliente": cliente}
 
 
 def update_cliente(db: Session, cliente_id: int, cliente_data: ClienteUpdateSchema):
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
     if cliente:
-        for key, value in cliente_data.items():
+        for key, value in cliente_data.model_dump(exclude_unset=True).items():
             setattr(cliente, key, value)
         db.commit()
         db.refresh(cliente)

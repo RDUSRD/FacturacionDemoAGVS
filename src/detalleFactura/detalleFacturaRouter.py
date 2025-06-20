@@ -6,7 +6,6 @@ from src.detalleFactura.detalleFacturaService import (
     get_all_detalles_factura,
     get_or_create_detalle_factura,
     update_detalle_factura,
-    # delete_detalle_factura,
 )
 from src.detalleFactura.detalleFacturaSchema import DetalleFacturaSchema, DetalleFacturaUpdateSchema
 
@@ -33,10 +32,3 @@ def update_detalle_factura_endpoint(detalle_factura_id: int, detalle_factura_dat
     if not detalle_factura:
         raise HTTPException(status_code=404, detail="Detalle de factura no encontrado")
     return detalle_factura
-
-# @router.delete("/{detalle_factura_id}")
-# def delete_detalle_factura_endpoint(detalle_factura_id: int, db: Session = Depends(get_db)):
-#     detalle_factura = delete_detalle_factura(db, detalle_factura_id)
-#     if not detalle_factura:
-#         raise HTTPException(status_code=404, detail="Detalle de factura no encontrado")
-#     return {"detail": "Detalle de factura eliminado correctamente"}

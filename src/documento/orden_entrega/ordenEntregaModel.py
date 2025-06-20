@@ -8,5 +8,5 @@ class OrdenEntrega(Documento):
     bienes_entregados = Column(JSON, nullable=False)
 
     __mapper_args__ = {
-        "polymorphic_identity": "orden_entrega"
+        "polymorphic_identity": "Orden_entrega"
     }

@@ -18,7 +18,8 @@ def get_or_create_empresa(db: Session, empresa_data: EmpresaSchema):
         db.add(empresa)
         db.commit()
         db.refresh(empresa)
-    return empresa
+        return empresa
+    return {'message': 'Empresa ya existe ' + empresa.rif, 'empresa': empresa}
 
 
 def update_empresa(db: Session, empresa_id: int, empresa_data: EmpresaUpdateSchema):

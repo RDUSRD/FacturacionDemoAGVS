@@ -13,7 +13,7 @@ class NotaDebito(Documento):
     total = Column(Float, nullable=False)
 
     __mapper_args__ = {
-        "polymorphic_identity": "nota_debito"
+        "polymorphic_identity": "Nota_debito"
     }
 
 class NotaCredito(Documento):
@@ -28,5 +28,5 @@ class NotaCredito(Documento):
     total = Column(Float, nullable=False)
 
     __mapper_args__ = {
-        "polymorphic_identity": "nota_credito"
+        "polymorphic_identity": "Nota_credito"
     }
