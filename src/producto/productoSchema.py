@@ -6,6 +6,7 @@ class ProductoSchema(BaseModel):
     descripcion: str = Field(..., min_length=10, description="La descripción debe ser válida", example="Producto de alta calidad")
     precio: float = Field(..., ge=0, description="El precio debe ser mayor o igual a 0", example=50.0)
     status: str = Field(..., description="El estado del producto", example="activo")
+    stock: int = Field(..., ge=0, description="El stock debe ser mayor o igual a 0", example=100)
 
     class Config:
         from_attributes = True
@@ -15,6 +16,7 @@ class ProductoUpdateSchema(BaseModel):
     descripcion: Optional[str] = Field(None, min_length=10, description="La descripción debe ser válida", example="Producto de alta calidad")
     precio: Optional[float] = Field(None, ge=0, description="El precio debe ser mayor o igual a 0", example=50.0)
     status: Optional[str] = Field(None, description="El estado del producto", example="activo")
+    stock: Optional[int] = Field(None, ge=0, description="El stock debe ser mayor o igual a 0", example=100)
 
     class Config:
         from_attributes = True

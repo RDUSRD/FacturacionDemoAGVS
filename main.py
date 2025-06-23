@@ -17,7 +17,6 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from database import Base, engine
 from loggers.logger import app_logger
-import os
 from dotenv import load_dotenv
 
 # Importar routers
@@ -37,11 +36,32 @@ from src.auditoria.audRouter import router as auditoria_router
 # Cargar variables de entorno
 load_dotenv()
 
+async def lifespan_with_reset(app: FastAPI):
+    """
+    Resets the database by dropping and recreating all tables during application startup.
+    """
+    print("Reiniciando la base de datos...")
+    Base.metadata.drop_all(bind=engine)
+    print("Tablas eliminadas correctamente.")
+    Base.metadata.create_all(bind=engine)
+    print("Tablas recreadas correctamente.")
+    yield
+
+async def lifespan_without_reset(app: FastAPI):
+    """
+    Starts the application without resetting the database.
+    """
+    print("Iniciando la aplicación sin reiniciar la base de datos...")
+    yield
+
 # Configurar la aplicación FastAPI
+USE_RESET = False  # Cambiar a True para reiniciar la base de datos al iniciar la aplicación
+
 app = FastAPI(
     description="API para la gestión de documentos y facturación",
     title="API Facturacion AGV Services",
     version="1.0.0",
+    lifespan=lifespan_with_reset if USE_RESET else lifespan_without_reset
 )
 
 # Middleware para servir archivos estáticos
@@ -63,9 +83,6 @@ app.include_router(comprobante_retencion_router)
 app.include_router(producto_router)
 app.include_router(detalle_factura_router)
 app.include_router(auditoria_router)
-
-# Crear las tablas en la base de datos
-Base.metadata.create_all(bind=engine)
 
 # Registrar un log al iniciar la aplicación
 app_logger.info("Aplicación FastAPI iniciada correctamente")

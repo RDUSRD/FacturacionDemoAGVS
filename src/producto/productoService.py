@@ -20,7 +20,8 @@ def get_or_create_producto(db: Session, producto_data: ProductoSchema):
         db.add(producto)
         db.commit()
         db.refresh(producto)
-    return producto
+        return producto
+    return {"detail": "Producto ya existe.", "producto": producto}
 
 
 def update_producto(db: Session, producto_id: int, producto_data: ProductoUpdateSchema):
@@ -31,11 +32,3 @@ def update_producto(db: Session, producto_id: int, producto_data: ProductoUpdate
         db.commit()
         db.refresh(producto)
     return producto
-
-
-# def delete_producto(db: Session, producto_id: int):
-#     producto = db.query(Producto).filter(Producto.id == producto_id).first()
-#     if producto:
-#         db.delete(producto)
-#         db.commit()
-#     return producto
