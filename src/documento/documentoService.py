@@ -1,6 +1,12 @@
 from sqlalchemy.orm import Session
 from src.documento.docModel import Documento
-from src.documento.documentoSchema import DocumentoSchema, DocumentoUpdateSchema
+
+# importando los esquemas necesarios
+from src.documento.factura.facturaSchema import FacturaSchema
+from src.documento.orden_entrega.ordenEntregaSchema import OrdenEntregaSchema
+from src.documento.notas.notaSchema import NotaCreditoSchema, NotaDebitoSchema
+
+# Importando servicios de empresa y cliente
 from src.empresa.empresaService import get_empresa_by_id
 from src.cliente.clienteService import get_cliente_by_id
 from src.documento.factura.facModel import Factura
@@ -13,6 +19,7 @@ from src.producto.prodModel import Producto
 from datetime import datetime
 
 
+# Funciones para obtener documentos
 def get_all_documentos(db: Session):
     return db.query(Documento).all()
 
@@ -21,7 +28,23 @@ def get_documento_by_id(db: Session, documento_id: int):
     return db.query(Documento).filter(Documento.id == documento_id).first()
 
 
-def get_or_create_documento(db: Session, documento_data: DocumentoSchema):
+def get_documento_by_numero_control(db: Session, numero_control: str):
+    return (
+        db.query(Documento).filter(Documento.numero_control == numero_control).first()
+    )
+
+
+def get_documentos_by_empresa_id(db: Session, empresa_id: int):
+    return db.query(Documento).filter(Documento.empresa_id == empresa_id).all()
+
+
+def get_documentos_by_cliente_id(db: Session, cliente_id: int):
+    return db.query(Documento).filter(Documento.cliente_id == cliente_id).all()
+
+
+# Funciones para crear documentos
+# Estas funciones manejan la creación de documentos y sus relaciones con otros modelos
+def get_or_create_factura(db: Session, documento_data: FacturaSchema):
     documento = (
         db.query(Documento)
         .filter(Documento.numero_control == documento_data.numero_control)
@@ -91,7 +114,8 @@ def get_or_create_documento(db: Session, documento_data: DocumentoSchema):
                                 db.query(DetalleFactura)
                                 .filter(
                                     DetalleFactura.factura_id == factura.id,
-                                    DetalleFactura.producto_id == detalle_data["producto_id"],
+                                    DetalleFactura.producto_id
+                                    == detalle_data["producto_id"],
                                 )
                                 .first()
                             )
@@ -103,11 +127,15 @@ def get_or_create_documento(db: Session, documento_data: DocumentoSchema):
                                         "error": "La factura_id no existe y es requerida para crear un detalle de factura."
                                     }
 
-                                producto = db.query(Producto).filter(Producto.id == detalle_data["producto_id"]).first()
+                                producto = (
+                                    db.query(Producto)
+                                    .filter(Producto.id == detalle_data["producto_id"])
+                                    .first()
+                                )
                                 if not producto:
                                     db.rollback()
                                     return {
-                                        "error": "La producto_id no existe y es requerida para crear un detalle de factura."
+                                        "error": "El producto no existe y es requerido para crear un detalle de factura."
                                     }
 
                                 if detalle_data["cantidad"] <= 0:
@@ -130,7 +158,9 @@ def get_or_create_documento(db: Session, documento_data: DocumentoSchema):
                     db.commit()
                 except Exception as e:
                     db.rollback()
-                    return {"error": f"Ocurrió un error al crear los detalles de la factura: {str(e)}"}
+                    return {
+                        "error": f"Ocurrió un error al crear los detalles de la factura: {str(e)}"
+                    }
 
                 return factura
             else:
@@ -145,64 +175,93 @@ def get_or_create_documento(db: Session, documento_data: DocumentoSchema):
         return {"error": f"Ocurrió un error al crear el documento: {str(e)}"}
 
 
-def update_documento(
-    db: Session, documento_id: int, documento_data: DocumentoUpdateSchema
-):
-    documento = db.query(Documento).filter(Documento.id == documento_id).first()
-    if not documento:
-        return {"error": "El documento con el ID especificado no existe."}
+def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
+    try:
+        factura = (
+            db.query(Factura).filter(Factura.id == documento_data.factura_id).first()
+        )
+        if not factura:
+            return {"error": "La factura asociada no existe."}
 
-    if documento_data.empresa_id:
-        # Verificamos si la empresa_id ha cambiado
-        if documento.empresa_id != documento_data.empresa_id:
-            # Verificamos si existe la nueva empresa
+        nota_credito = NotaCredito(
+            tipo_documento="NotaCredito",
+            numero_control=documento_data.numero_control,
+            factura_id=factura.id,
+            monto_credito=documento_data.monto_credito,
+            descripcion=documento_data.descripcion,
+            fecha_emision=datetime.today().date(),
+            hora_emision=datetime.now().time(),
+        )
+
+        db.add(nota_credito)
+        db.commit()
+        db.refresh(nota_credito)
+
+        return nota_credito
+    except Exception as e:
+        db.rollback()
+        return {"error": f"Ocurrió un error al crear la nota de crédito: {str(e)}"}
+
+
+def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
+    try:
+        factura = (
+            db.query(Factura).filter(Factura.id == documento_data.factura_id).first()
+        )
+        if not factura:
+            return {"error": "La factura asociada no existe."}
+
+        nota_debito = NotaDebito(
+            tipo_documento="NotaDebito",
+            numero_control=documento_data.numero_control,
+            factura_id=factura.id,
+            monto_debito=documento_data.monto_debito,
+            descripcion=documento_data.descripcion,
+            fecha_emision=datetime.today().date(),
+            hora_emision=datetime.now().time(),
+        )
+
+        db.add(nota_debito)
+        db.commit()
+        db.refresh(nota_debito)
+
+        return nota_debito
+    except Exception as e:
+        db.rollback()
+        return {"error": f"Ocurrió un error al crear la nota de débito: {str(e)}"}
+
+
+def get_or_create_orden_entrega(db: Session, documento_data: OrdenEntregaSchema):
+    try:
+        orden_entrega = (
+            db.query(OrdenEntrega)
+            .filter(OrdenEntrega.numero_control == documento_data.numero_control)
+            .first()
+        )
+
+        if not orden_entrega:
             empresa = get_empresa_by_id(db, documento_data.empresa_id)
             if not empresa:
-                return {
-                    "error": "La empresa_id no existe y es requerida para actualizar el documento."
-                }
-            documento.empresa_id = empresa.id
-    if documento_data.cliente_id:
-        # Verificamos si la cliente_id ha cambiado
-        if documento.cliente_id != documento_data.cliente_id:
-            # Verificamos si existe el nuevo cliente
+                return {"error": "La empresa asociada no existe."}
+
             cliente = get_cliente_by_id(db, documento_data.cliente_id)
             if not cliente:
-                return {
-                    "error": "El cliente_id no existe y es requerido para actualizar el documento."
-                }
-            documento.cliente_id = cliente.id
+                return {"error": "El cliente asociado no existe."}
 
-    # Actualizamos el tipo de documento si es necesario
-    if documento_data.tipo_documento:
-        if documento_data.tipo_documento == "factura":
-            documento = Factura(
-                monto_exento=documento_data.monto_exento, total=documento_data.total
+            orden_entrega = OrdenEntrega(
+                tipo_documento="OrdenEntrega",
+                numero_control=documento_data.numero_control,
+                empresa_id=empresa.id,
+                cliente_id=cliente.id,
+                fecha_emision=datetime.today().date(),
+                hora_emision=datetime.now().time(),
             )
-            # Actualizar operaciones asociadas
-            if documento_data.operaciones:
-                for operacion_data in documento_data.operaciones:
-                    operacion = Operacion(**operacion_data)
-                    operacion.factura = documento
-                    db.add(operacion)
 
-            # Actualizar impuestos asociados
-            if documento_data.impuestos:
-                for iva_data in documento_data.impuestos:
-                    iva_aux = iva(**iva_data)
-                    iva_aux.factura = documento
-                    db.add(iva_aux)
-        elif documento_data.tipo_documento == "OrdenEntrega":
-            documento = OrdenEntrega(**documento_data.model_dump(exclude_unset=True))
-        elif documento_data.tipo_documento == "notaCredito":
-            documento = NotaCredito(**documento_data.model_dump(exclude_unset=True))
-        elif documento_data.tipo_documento == "notaDebito":
-            documento = NotaDebito(**documento_data.model_dump(exclude_unset=True))
-        else:
-            return {"error": "El tipo de documento debe ser válido."}
+            db.add(orden_entrega)
+            db.commit()
+            db.refresh(orden_entrega)
 
-    for key, value in documento_data.model_dump(exclude_unset=True).items():
-        setattr(documento, key, value)
-    db.commit()
-    db.refresh(documento)
-    return documento
+        return orden_entrega
+    except Exception as e:
+        db.rollback()
+        return {"error": f"Ocurrió un error al crear la orden de entrega: {str(e)}"}

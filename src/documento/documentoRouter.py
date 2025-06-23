@@ -4,19 +4,26 @@ from database import get_db
 from src.documento.documentoService import (
     get_documento_by_id,
     get_all_documentos,
-    get_or_create_documento,
-    update_documento,
+    get_documento_by_numero_control,
+    get_documentos_by_empresa_id,
+    get_documentos_by_cliente_id,
+    get_or_create_factura,
+    get_or_create_nota_credito,
+    get_or_create_nota_debito,
+    get_or_create_orden_entrega,
 )
-from src.documento.documentoSchema import (
-    FacturaSchema,
-    OrdenEntregaSchema,
+from src.documento.factura.facturaSchema import FacturaSchema
+from src.documento.orden_entrega.ordenEntregaSchema import OrdenEntregaSchema
+from src.documento.notas.notaSchema import (
     NotaCreditoSchema,
     NotaDebitoSchema,
 )
 
+
 router = APIRouter(prefix="/documento", tags=["Documento"])
 
 
+# Endpoints para obtener documentos
 @router.get("/")
 def get_documentos(db: Session = Depends(get_db)):
     return get_all_documentos(db)
@@ -30,75 +37,58 @@ def get_documento(documento_id: int, db: Session = Depends(get_db)):
     return documento
 
 
+@router.get("/numero-control/{numero_control}")
+def get_documento_numero_control(numero_control: str, db: Session = Depends(get_db)):
+    documento = get_documento_by_numero_control(db, numero_control)
+    if not documento:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    return documento
+
+
+@router.get("/empresa/{empresa_id}")
+def get_documentos_empresa_id(empresa_id: int, db: Session = Depends(get_db)):
+    documentos = get_documentos_by_empresa_id(db, empresa_id)
+    if not documentos:
+        raise HTTPException(
+            status_code=404,
+            detail="No se encontraron documentos para la empresa especificada",
+        )
+    return documentos
+
+
+@router.get("/cliente/{cliente_id}")
+def get_documentos_cliente_id(cliente_id: int, db: Session = Depends(get_db)):
+    documentos = get_documentos_by_cliente_id(db, cliente_id)
+    if not documentos:
+        raise HTTPException(
+            status_code=404,
+            detail="No se encontraron documentos para el cliente especificado",
+        )
+    return documentos
+
+
+# Endpoints para crear documentos
 @router.post("/create/factura")
 def create_factura_endpoint(factura_data: FacturaSchema, db: Session = Depends(get_db)):
-    return get_or_create_documento(db, factura_data)
+    return get_or_create_factura(db, factura_data)
 
 
 @router.post("/create/orden-entrega")
 def create_orden_entrega_endpoint(
     orden_entrega_data: OrdenEntregaSchema, db: Session = Depends(get_db)
 ):
-    return get_or_create_documento(db, orden_entrega_data)
+    return get_or_create_orden_entrega(db, orden_entrega_data)
 
 
 @router.post("/create/nota-credito")
 def create_nota_credito_endpoint(
     nota_credito_data: NotaCreditoSchema, db: Session = Depends(get_db)
 ):
-    return get_or_create_documento(db, nota_credito_data)
+    return get_or_create_nota_credito(db, nota_credito_data)
 
 
 @router.post("/create/nota-debito")
 def create_nota_debito_endpoint(
     nota_debito_data: NotaDebitoSchema, db: Session = Depends(get_db)
 ):
-    return get_or_create_documento(db, nota_debito_data)
-
-
-@router.put("/update/factura/{documento_id}")
-def update_factura_endpoint(
-    documento_id: int,
-    factura_data: FacturaSchema,
-    db: Session = Depends(get_db),
-):
-    documento = update_documento(db, documento_id, factura_data)
-    if not documento:
-        raise HTTPException(status_code=404, detail="Factura no encontrada")
-    return documento
-
-
-@router.put("/update/orden-entrega/{documento_id}")
-def update_orden_entrega_endpoint(
-    documento_id: int,
-    orden_entrega_data: OrdenEntregaSchema,
-    db: Session = Depends(get_db),
-):
-    documento = update_documento(db, documento_id, orden_entrega_data)
-    if not documento:
-        raise HTTPException(status_code=404, detail="Orden de entrega no encontrada")
-    return documento
-
-
-@router.put("/update/nota-credito/{documento_id}")
-def update_nota_credito_endpoint(
-    documento_id: int,
-    nota_credito_data: NotaCreditoSchema,
-    db: Session = Depends(get_db),
-):
-    documento = update_documento(db, documento_id, nota_credito_data)
-    if not documento:
-        raise HTTPException(status_code=404, detail="Nota de crédito no encontrada")
-    return documento
-
-
-@router.put("/update/nota-debito/{documento_id}")
-def update_nota_debito_endpoint(
-    documento_id: int,
-    nota_debito_data: NotaDebitoSchema,
-    db: Session = Depends(get_db),
-):
-    documento = update_documento(db, documento_id, nota_debito_data)
-    if not documento:
-        raise HTTPException(status_code=404, detail="Nota de débito no encontrada")
-    return documento
+    return get_or_create_nota_debito(db, nota_debito_data)
