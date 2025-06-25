@@ -5,6 +5,11 @@ class IVASchema(BaseModel):
     base: float = Field(
         ..., ge=0, description="Base imponible para el cálculo de IVA", example=800
     )
+
+    monto_exento: float = Field(
+        ..., ge=0, description="Monto exento de IVA", example=200
+    )
+
     monto: float = Field(..., ge=0, description="Monto de IVA calculado", example=160)
 
     factura_id: int = Field(

@@ -24,6 +24,13 @@ class ClienteSchema(BaseModel):
 
     class Config:
         from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "nombre": "Cliente XYZ",
+                "rif": "J-12345678-9",
+                "domicilio_fiscal": "Av. Principal, Edificio XYZ, Caracas",
+            }
+        }
 
 
 class ClienteUpdateSchema(BaseModel):
@@ -47,5 +54,18 @@ class ClienteUpdateSchema(BaseModel):
         example="Av. Principal, Edificio XYZ, Caracas",
     )
 
+    date_updated: str = Field(
+        None,
+        description="Fecha de actualización del cliente en formato ISO 8601",
+        example="2023-10-02T12:00:00Z",
+    )
+
     class Config:
         from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "nombre": "Cliente XYZ",
+                "rif": "J-12345678-9",
+                "domicilio_fiscal": "Av. Principal, Edificio XYZ, Caracas",
+            }
+        }

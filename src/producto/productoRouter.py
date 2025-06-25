@@ -25,6 +25,35 @@ def get_producto(producto_id: int, db: Session = Depends(get_db)):
     return producto
 
 
+@router.get("/codigo/{codigo}")
+def get_producto_by_codigo(codigo: str, db: Session = Depends(get_db)):
+    producto = get_producto_by_codigo(db, codigo)
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return producto
+
+
+@router.get("/codigo_barras/{codigo_barras}")
+def get_producto_by_codigo_barras(codigo_barras: str, db: Session = Depends(get_db)):
+    producto = get_producto_by_codigo_barras(db, codigo_barras)
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return producto
+
+
+@router.get("/codigo_QR/{codigo_QR}")
+def get_producto_by_codigo_QR(codigo_QR: str, db: Session = Depends(get_db)):
+    producto = get_producto_by_codigo_QR(db, codigo_QR)
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return producto
+
+
+@router.get("/exento")
+def get_producto_exento(db: Session = Depends(get_db)):
+    return get_producto_exento(db)
+
+
 @router.post("/create")
 def create_or_get_producto_endpoint(
     producto_data: ProductoSchema, db: Session = Depends(get_db)

@@ -1,26 +1,46 @@
 from pydantic import Field
 from src.documento.documentoSchema import DocumentoSchema
+from typing import Optional
 
 
 class FacturaSchema(DocumentoSchema):
-    monto_exento: float = Field(
-        ..., ge=0, description="Monto exento de impuestos", example=200
+    tipo_documento: str = Field(
+        ..., description="Debe especificar el tipo de documento", example="Factura"
     )
-    total: float = Field(
-        ..., ge=0, description="Monto total de la factura", example=1160
+    cliente_id: int = Field(
+        ..., ge=1, description="El ID del cliente debe ser válido", example=2
     )
-    operaciones: list = Field(
-        ...,
-        description="Lista de operaciones asociadas a la factura",
-        example=[{"tipo": "venta", "monto": 1000}],
+    empresa_id: int = Field(
+        ..., ge=1, description="El ID de la empresa debe ser válido", example=1
     )
-    impuestos: list = Field(
-        ...,
+    total: Optional[float] = Field(
+        None, ge=0, description="Monto total de la factura", example=1160
+    )
+    impuestos: Optional[list] = Field(
+        None,
         description="Lista de impuestos aplicados a la factura",
         example=[{"base": 800, "monto": 160}],
+    )
+    operaciones: Optional[list] = Field(
+        None,
+        description="Lista de operaciones asociadas a la factura",
+        example=[{"tipo": "venta", "monto": 1000}],
     )
     detalles_factura: list = Field(
         ...,
         description="Lista de detalles de la factura",
         example=[{"factura_id": 1, "producto_id": 1, "cantidad": 2}],
     )
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "tipo_documento": "Factura",
+                "cliente_id": 2,
+                "empresa_id": 1,
+                "detalles_factura": [
+                    {"factura_id": 1, "producto_id": 1, "cantidad": 2}
+                ],
+            }
+        }

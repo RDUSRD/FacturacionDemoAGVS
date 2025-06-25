@@ -7,12 +7,7 @@ class DocumentoSchema(BaseModel):
     tipo_documento: str = Field(
         ..., description="Debe especificar el tipo de documento", example="Factura"
     )
-    numero_control: str = Field(
-        ...,
-        pattern=r"^\d{8}$",
-        description="El número de control debe tener 8 dígitos",
-        example="12345678",
-    )
+
     fecha_emision: Optional[date] = Field(
         None, description="La fecha de emisión debe ser válida", example="2025-06-20"
     )
@@ -24,9 +19,6 @@ class DocumentoSchema(BaseModel):
     )
     cliente_id: int = Field(
         ..., ge=1, description="El ID del cliente debe ser válido", example=2
-    )
-    estado: str = Field(
-        ..., description="Debe especificar el estado del documento", example="Activo"
     )
 
     class Config:
@@ -61,6 +53,3 @@ class DocumentoUpdateSchema(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-

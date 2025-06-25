@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DECIMAL
+from sqlalchemy import Boolean, Column, Integer, String, Text, DECIMAL
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -11,5 +11,8 @@ class Producto(Base):
     precio = Column(DECIMAL(10, 2), nullable=False)
     status = Column(String(20), nullable=False, default="activo")
     stock = Column(Integer, nullable=False, default=0)
+    codigo_barras = Column(String(100), unique=True, nullable=True)
+    codigo_QR = Column(String(100), unique=True, nullable=True)
+    exento = Column(Boolean, default=False)
 
     detalles_factura = relationship("DetalleFactura", back_populates="producto")

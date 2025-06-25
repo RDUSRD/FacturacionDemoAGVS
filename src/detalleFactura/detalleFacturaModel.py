@@ -5,7 +5,7 @@ from database import Base
 class DetalleFactura(Base):
     __tablename__ = "detalle_factura"
     id = Column(Integer, primary_key=True, index=True)
-    factura_id = Column(Integer, ForeignKey("factura.id"), nullable=False)
+    factura_id = Column(Integer, ForeignKey("factura.factura_id"), nullable=False)
     producto_id = Column(Integer, ForeignKey("producto.id"), nullable=False)
     cantidad = Column(Integer, nullable=False)  # Cambiado a Integer para representar cantidades enteras
     total = Column(DECIMAL(10, 2), nullable=False)

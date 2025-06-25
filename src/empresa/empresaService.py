@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy.orm import Session
 from src.empresa.empModel import Empresa
 from src.empresa.empresaSchema import EmpresaSchema, EmpresaUpdateSchema
@@ -19,7 +20,7 @@ def get_or_create_empresa(db: Session, empresa_data: EmpresaSchema):
         db.commit()
         db.refresh(empresa)
         return empresa
-    return {'message': 'Empresa ya existe ' + empresa.rif, 'empresa': empresa}
+    return {"message": "Empresa ya existe " + empresa.rif, "empresa": empresa}
 
 
 def update_empresa(db: Session, empresa_id: int, empresa_data: EmpresaUpdateSchema):
@@ -27,6 +28,10 @@ def update_empresa(db: Session, empresa_id: int, empresa_data: EmpresaUpdateSche
     if empresa:
         for key, value in empresa_data.model_dump(exclude_unset=True).items():
             setattr(empresa, key, value)
+        date_updated = empresa_data.date_updated or datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+        empresa.date_updated = date_updated
         db.commit()
         db.refresh(empresa)
     return empresa
