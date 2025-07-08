@@ -10,3 +10,4 @@ PyJWT
 httpx
 itsdangerous
 watchgod
+starlette

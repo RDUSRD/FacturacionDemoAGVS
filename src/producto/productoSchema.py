@@ -40,6 +40,9 @@ class ProductoSchema(BaseModel):
         description="Indica si el producto está exento de impuestos",
         example=False,
     )
+    descuento: Optional[float] = Field(
+        0.0, ge=0, description="Monto del descuento aplicado al producto", example=10.0
+    )
 
     class Config:
         from_attributes = True
@@ -50,6 +53,7 @@ class ProductoSchema(BaseModel):
                 "status": "activo",
                 "stock": 100,
                 "exento": False,
+                "descuento": 10.0,
             }
         }
 
@@ -94,6 +98,9 @@ class ProductoUpdateSchema(BaseModel):
         description="Indica si el producto está exento de impuestos",
         example=False,
     )
+    descuento: Optional[float] = Field(
+        None, ge=0, description="Monto del descuento aplicado al producto", example=10.0
+    )
 
     class Config:
         from_attributes = True
@@ -104,5 +111,6 @@ class ProductoUpdateSchema(BaseModel):
                 "status": "activo",
                 "stock": 100,
                 "exento": False,
+                "descuento": 10.0,
             }
         }

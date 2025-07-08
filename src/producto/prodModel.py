@@ -14,5 +14,6 @@ class Producto(Base):
     codigo_barras = Column(String(100), unique=True, nullable=True)
     codigo_QR = Column(String(100), unique=True, nullable=True)
     exento = Column(Boolean, default=False)
+    descuento = Column(DECIMAL(10, 2), nullable=True, default=0.0)
 
     detalles_factura = relationship("DetalleFactura", back_populates="producto")

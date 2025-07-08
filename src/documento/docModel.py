@@ -8,12 +8,14 @@ class Documento(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tipo_documento = Column(String(50), nullable=False)
-    numero_control = Column(String(50), nullable=False)
+    numero_control = Column(String(50), nullable=True)
     fecha_emision = Column(Date, nullable=False)
     hora_emision = Column(Time, nullable=False)
     empresa_id = Column(Integer, ForeignKey("empresa.id"), nullable=False)
     cliente_id = Column(Integer, ForeignKey("cliente.id"), nullable=False)
     estado = Column(String(50), nullable=False)
+    fecha_numero_control = Column(Date, nullable=True)
+    hora_numero_control = Column(Time, nullable=True)
 
     empresa = relationship("Empresa", back_populates="documentos")
     cliente = relationship("Cliente", back_populates="documentos")

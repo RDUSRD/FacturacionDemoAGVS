@@ -63,14 +63,26 @@ def get_documentos_by_cliente_id(db: Session, cliente_id: int):
     return db.query(Documento).filter(Documento.cliente_id == cliente_id).all()
 
 
+# Funcion para asignar un número de control único a una factura
+def generate_unique_numero_control(db: Session) -> str:
+    """Genera un número de control único como cadena para una factura."""
+    while True:
+        numero_control = str(random.randint(10000000, 99999999))
+        if (
+            not db.query(Factura)
+            .filter(Factura.numero_control == numero_control)
+            .first()
+        ):
+            return numero_control
+        # Si el número de control ya existe, se genera uno nuevo
+        print(f"Número de control {numero_control} ya existe. Generando uno nuevo...")
+
+
 # Funciones para crear documentos
 # Estas funciones manejan la creación de documentos y sus relaciones con otros modelos
 def get_or_create_factura(db: Session, documento_data: FacturaSchema):
     try:
         print("Iniciando creación de factura...")
-        # Generar un número de control único
-        numero_control = generate_unique_numero_control(db)
-        print(f"Número de control generado: {numero_control}")
 
         # Verificar si la empresa y el cliente existen
         empresa = get_empresa_by_id(db, documento_data.empresa_id)
@@ -91,12 +103,13 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
             # Crear la factura inicialmente con datos básicos
             factura = Factura(
                 tipo_documento=documento_data.tipo_documento,
-                numero_control=numero_control,
                 estado="En espera",  # Asignamos un estado por defecto
                 empresa_id=documento_data.empresa_id,
                 cliente_id=documento_data.cliente_id,
                 fecha_emision=datetime.today().date(),
                 hora_emision=datetime.now().time(),
+                aplica_igtf=documento_data.aplica_igtf,
+                
             )
             db.add(factura)
             db.commit()
@@ -106,6 +119,7 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
             # Inicializamos variables para cálculos
             monto_exento = 0
             monto_base = 0
+            descuento_total = 0  # Inicializamos el descuento total
 
             # Confirmar que la factura existe y está confirmada
             factura_confirmada = (
@@ -147,6 +161,13 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                 total_producto = detalle_data["cantidad"] * producto.precio
                 print(f"Total del producto calculado: {total_producto}")
 
+                # Calcular descuento del producto
+                descuento_producto = (
+                    detalle_data.get("descuento", 0) * detalle_data["cantidad"]
+                )
+                descuento_total += descuento_producto
+                print(f"Descuento del producto calculado: {descuento_producto}")
+
                 if producto.exento:
                     monto_exento += total_producto
                 else:
@@ -164,21 +185,48 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                 db.add(detalle_factura)
                 print(f"Detalle de factura creado: {detalle_factura}")
 
-            print(f"Monto exento: {monto_exento}, Monto base: {monto_base}")
+            print(
+                f"Monto exento: {monto_exento}, Monto base: {monto_base}, Descuento total: {descuento_total}"
+            )
 
             # Calculamos impuestos
-            iva_monto = round(monto_base * Decimal("0.16"), 2)
+            iva_monto = round(
+                monto_base * Decimal("0.16"), 2
+            )  # Calculamos el IVA sobre el monto base sin descuento
+            print(f"IVA calculado: {iva_monto}")
+            monto_base_con_descuento = (
+                monto_base - descuento_total
+            )  # Aplicamos el descuento al monto base
+
+            # Verificamos si aplica el IGTF
+            monto_igtf = 0
+            if factura.aplica_igtf:
+                monto_igtf = round(
+                    monto_base * Decimal("0.03"), 2
+                )  # Calculamos el 3% del monto base
+                print(f"IGTF calculado: {monto_igtf}")
+
+            # Calculamos el subtotal y total de la factura
+            subtotal = (
+                monto_base_con_descuento + iva_monto
+            )  # Sumamos el IVA al monto base con descuento
+            total_factura = subtotal + monto_igtf  # Agregamos el IGTF al subtotal
+            print(
+                f"Monto base con descuento: {monto_base_con_descuento}, Subtotal calculado: {subtotal}, Total con IGTF: {total_factura}"
+            )
+
+            # Definimos los impuestos después de calcular el IVA
             impuestos = [
                 {"base": monto_base, "monto": iva_monto, "monto_exento": monto_exento}
             ]
-            print(f"Impuestos calculados: {impuestos}")
-
-            # Calculamos el total de la factura
-            total_factura = monto_base + iva_monto
-            print(f"Total de la factura calculado: {total_factura}")
+            print(f"Impuestos definidos: {impuestos}")
 
             # Actualizamos la factura con los cálculos
             factura.total = total_factura
+            factura.descuento_total = (
+                descuento_total  # Guardamos el descuento total en la factura
+            )
+            factura.monto_igtf = monto_igtf  # Guardamos el monto del IGTF en la factura
             db.add(factura)
             db.commit()
             db.refresh(factura)
@@ -308,18 +356,6 @@ def get_or_create_orden_entrega(db: Session, documento_data: OrdenEntregaSchema)
         return {"error": f"Ocurrió un error al crear la orden de entrega: {str(e)}"}
 
 
-def generate_unique_numero_control(db: Session) -> str:
-    """Genera un número de control único como cadena para una factura."""
-    while True:
-        numero_control = str(random.randint(10000000, 99999999))
-        if (
-            not db.query(Factura)
-            .filter(Factura.numero_control == numero_control)
-            .first()
-        ):
-            return numero_control
-
-
 def create_operacion(db: Session, factura_id: int, tipo: str, monto: float):
     """Crea una operación relacionada con una factura."""
     operacion = Operacion(factura_id=factura_id, tipo=tipo, monto=monto)
@@ -327,3 +363,30 @@ def create_operacion(db: Session, factura_id: int, tipo: str, monto: float):
     db.commit()
     db.refresh(operacion)
     return operacion
+
+
+def assign_numero_control(db: Session, factura_id: int):
+    try:
+        # Obtener la factura por ID
+        factura = db.query(Factura).filter(Factura.factura_id == factura_id).first()
+        if not factura:
+            return {"error": "La factura no existe."}
+
+        # Generar un número de control único
+        numero_control = generate_unique_numero_control(db)
+        factura.numero_control = numero_control
+        factura.fecha_numero_control = datetime.today().date()
+        factura.hora_numero_control = datetime.now().time()
+
+        # Guardar los cambios en la base de datos
+        db.add(factura)
+        db.commit()
+        db.refresh(factura)
+
+        print(f"Número de control asignado: {numero_control}")
+        return factura
+
+    except Exception as e:
+        db.rollback()
+        print(f"Error al asignar el número de control: {str(e)}")
+        return {"error": f"Ocurrió un error al asignar el número de control: {str(e)}"}

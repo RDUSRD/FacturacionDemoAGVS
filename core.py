@@ -24,6 +24,9 @@ from dotenv import load_dotenv # type: ignore
 load_dotenv()
 
 url = os.getenv("AUTHENTIK_URL")
+if not url:
+    raise ValueError("AUTHENTIK_URL environment variable is not set.")
+
 templates = Jinja2Templates(directory="templates")
 oauth = OAuth()
 

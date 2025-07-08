@@ -13,6 +13,9 @@ class FacturaSchema(DocumentoSchema):
     empresa_id: int = Field(
         ..., ge=1, description="El ID de la empresa debe ser válido", example=1
     )
+    descuento_total: Optional[float] = Field(
+        None, ge=0, description="Monto del descuento aplicado a la factura", example=100
+    )
     total: Optional[float] = Field(
         None, ge=0, description="Monto total de la factura", example=1160
     )
@@ -31,6 +34,10 @@ class FacturaSchema(DocumentoSchema):
         description="Lista de detalles de la factura",
         example=[{"factura_id": 1, "producto_id": 1, "cantidad": 2}],
     )
+    aplica_igtf: bool = Field(..., description="Indica si aplica el IGTF", example=True)
+    monto_igtf: Optional[float] = Field(
+        None, ge=0, description="Monto del IGTF si aplica", example=20.0
+    )
 
     class Config:
         from_attributes = True
@@ -39,6 +46,7 @@ class FacturaSchema(DocumentoSchema):
                 "tipo_documento": "Factura",
                 "cliente_id": 2,
                 "empresa_id": 1,
+                "aplica_igtf": True,
                 "detalles_factura": [
                     {"factura_id": 1, "producto_id": 1, "cantidad": 2}
                 ],
