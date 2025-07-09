@@ -35,8 +35,10 @@ def create_pedido(db: Session, pedido_data: PedidoSchema):
                 raise ValueError(
                     f"El producto con ID {detalle_data['producto_id']} no existe."
                 )
-
+            # Get the unit price of the product discount if applicable
             precio_unitario = producto.precio
+            if producto.descuento:
+                descuento = producto.descuento
             total_detalle = detalle_data["cantidad"] * precio_unitario
             total_pedido += total_detalle
 
@@ -44,6 +46,7 @@ def create_pedido(db: Session, pedido_data: PedidoSchema):
                 producto_id=detalle_data["producto_id"],
                 cantidad=detalle_data["cantidad"],
                 precio_unitario=precio_unitario,
+                descuento=descuento,
                 total=total_detalle,
             )
             detalles_pedido.append(detalle_pedido)
@@ -52,7 +55,7 @@ def create_pedido(db: Session, pedido_data: PedidoSchema):
         pedido = Pedido(
             cliente_id=pedido_data.cliente_id,
             empresa_id=pedido_data.empresa_id,
-            estado="Pendiente",
+            estado="pendiente",
             total=total_pedido,
             observaciones=pedido_data.observaciones,
         )
@@ -75,6 +78,7 @@ def create_pedido(db: Session, pedido_data: PedidoSchema):
             "estado": pedido.estado,
             "fecha_creacion": pedido.fecha_creacion,
             "fecha_actualizacion": pedido.fecha_actualizacion,
+            "fecha_vencimiento": pedido.fecha_vencimiento,
             "total": float(pedido.total) if pedido.total else None,
             "observaciones": pedido.observaciones,
         }
@@ -86,6 +90,7 @@ def create_pedido(db: Session, pedido_data: PedidoSchema):
                 "producto_id": detalle.producto_id,
                 "cantidad": detalle.cantidad,
                 "precio_unitario": float(detalle.precio_unitario),
+                "descuento": float(detalle.descuento) if detalle.descuento else None,
                 "total": float(detalle.total),
             }
             for detalle in detalles_pedido
@@ -119,6 +124,7 @@ def get_pedido_by_id(db: Session, pedido_id: int):
         "estado": pedido.estado,
         "fecha_creacion": pedido.fecha_creacion,
         "fecha_actualizacion": pedido.fecha_actualizacion,
+        "fecha_vencimiento": pedido.fecha_vencimiento,
         "total": float(pedido.total) if pedido.total else None,
         "observaciones": pedido.observaciones,
     }
@@ -129,12 +135,42 @@ def get_pedido_by_id(db: Session, pedido_id: int):
             "producto_id": detalle.producto_id,
             "cantidad": detalle.cantidad,
             "precio_unitario": float(detalle.precio_unitario),
+            "descuento": float(detalle.descuento) if detalle.descuento else None,
             "total": float(detalle.total),
         }
         for detalle in detalles_pedido
     ]
 
     return {"pedido": pedido_dict, "detalles_pedido": detalles_dict}
+
+
+# Ready for conversion
+def get_ready_for_conversion(db: Session):
+    try:
+        pedidos = db.query(Pedido).filter(Pedido.estado == "Pendiente").all()
+        return {"pedidos": pedidos}
+    except Exception as e:
+        db.rollback()
+        raise ValueError(f"Error al obtener pedidos listos para conversión: {str(e)}")
+
+
+# Convert a Pedido
+def convert_pedido(db: Session, pedido_id: int):
+    try:
+        pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()
+        if not pedido:
+            return {"error": "Pedido no encontrado"}
+
+        # Update the estado to "Convertido"
+        pedido.estado = "Convertido"
+        db.commit()
+        db.refresh(pedido)
+
+        return {"message": "Pedido convertido exitosamente", "pedido": pedido}
+
+    except Exception as e:
+        db.rollback()
+        raise ValueError(f"Error al convertir el pedido: {str(e)}")
 
 
 # Update a Pedido
@@ -152,14 +188,20 @@ def update_pedido(db: Session, pedido_id: int, pedido_data: PedidoUpdateSchema):
         # Handle detalles_pedido updates
         if hasattr(pedido_data, "detalles_pedido") and pedido_data.detalles_pedido:
             total_pedido = 0
-            db.query(DetallePedido).filter(DetallePedido.pedido_id == pedido_id).delete()
+            db.query(DetallePedido).filter(
+                DetallePedido.pedido_id == pedido_id
+            ).delete()
 
             for detalle_data in pedido_data.detalles_pedido:
                 producto = (
-                    db.query(Producto).filter(Producto.id == detalle_data.producto_id).first()
+                    db.query(Producto)
+                    .filter(Producto.id == detalle_data.producto_id)
+                    .first()
                 )
                 if not producto:
-                    raise ValueError(f"El producto con ID {detalle_data.producto_id} no existe.")
+                    raise ValueError(
+                        f"El producto con ID {detalle_data.producto_id} no existe."
+                    )
 
                 precio_unitario = producto.precio
                 total_detalle = detalle_data.cantidad * precio_unitario
@@ -170,7 +212,7 @@ def update_pedido(db: Session, pedido_id: int, pedido_data: PedidoUpdateSchema):
                     producto_id=detalle_data.producto_id,
                     cantidad=detalle_data.cantidad,
                     precio_unitario=precio_unitario,
-                    total=total_detalle
+                    total=total_detalle,
                 )
                 db.add(detalle_pedido)
 

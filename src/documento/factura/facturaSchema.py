@@ -8,10 +8,10 @@ class FacturaSchema(DocumentoSchema):
         ..., description="Debe especificar el tipo de documento", example="Factura"
     )
     cliente_id: int = Field(
-        ..., ge=1, description="El ID del cliente debe ser válido", example=2
+        None, ge=1, description="El ID del cliente debe ser válido", example=2
     )
     empresa_id: int = Field(
-        ..., ge=1, description="El ID de la empresa debe ser válido", example=1
+        None, ge=1, description="El ID de la empresa debe ser válido", example=1
     )
     descuento_total: Optional[float] = Field(
         None, ge=0, description="Monto del descuento aplicado a la factura", example=100
@@ -30,7 +30,7 @@ class FacturaSchema(DocumentoSchema):
         example=[{"tipo": "venta", "monto": 1000}],
     )
     detalles_factura: list = Field(
-        ...,
+        None,
         description="Lista de detalles de la factura",
         example=[{"producto_id": 1, "cantidad": 2}],
     )
@@ -38,17 +38,16 @@ class FacturaSchema(DocumentoSchema):
     monto_igtf: Optional[float] = Field(
         None, ge=0, description="Monto del IGTF si aplica", example=20.0
     )
+    pedido_id: int = Field(
+        ..., ge=1, description="El ID del pedido asociado a la factura", example=1
+    )
 
     class Config:
         from_attributes = True
         json_schema_extra = {
             "example": {
                 "tipo_documento": "Factura",
-                "cliente_id": 2,
-                "empresa_id": 1,
                 "aplica_igtf": True,
-                "detalles_factura": [
-                    {"producto_id": 1, "cantidad": 2}
-                ],
+                "pedido_id": 1,
             }
         }

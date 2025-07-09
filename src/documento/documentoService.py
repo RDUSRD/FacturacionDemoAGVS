@@ -16,7 +16,8 @@ from src.documento.notas.notaModel import NotaCredito, NotaDebito
 from src.documento.factura.iva.ivaModel import iva
 from src.documento.factura.operacion.operacionModel import Operacion
 from src.documento.factura.detalleFactura.detalleFacturaModel import DetalleFactura
-from src.producto.prodModel import Producto
+from src.pedidos.pedidoModel import Pedido  # Importar el modelo Pedido
+from src.pedidos.pedidoService import convert_pedido
 from datetime import datetime
 import random
 
@@ -82,186 +83,139 @@ def generate_unique_numero_control(db: Session) -> str:
 # Estas funciones manejan la creación de documentos y sus relaciones con otros modelos
 def get_or_create_factura(db: Session, documento_data: FacturaSchema):
     try:
-        print("Iniciando creación de factura...")
+        print("Iniciando creación de factura desde pedido...")
 
-        # Verificar si la empresa y el cliente existen
-        empresa = get_empresa_by_id(db, documento_data.empresa_id)
-        print(f"Empresa obtenida: {empresa}")
-        cliente = get_cliente_by_id(db, documento_data.cliente_id)
-        print(f"Cliente obtenido: {cliente}")
-
-        if not empresa:
-            print("Error: La empresa no existe.")
+        # Buscar el pedido
+        pedido = db.query(Pedido).filter(Pedido.id == documento_data.pedido_id).first()
+        if not pedido:
+            print("Error: El pedido no existe.")
             db.rollback()
-            return {"error": "La empresa no existe."}
-        if not cliente:
-            print("Error: El cliente no existe.")
+            return {"error": "El pedido no existe."}
+
+        # Validar el estado del pedido
+        if pedido.estado != "pendiente":
+            print("Error: El pedido no está en un estado válido para facturación.")
             db.rollback()
-            return {"error": "El cliente no existe."}
+            return {"error": "El pedido no está en un estado válido para facturación."}
 
-        try:
-            # Crear la factura inicialmente con datos básicos
-            factura = Factura(
-                tipo_documento=documento_data.tipo_documento,
-                estado="En espera",  # Asignamos un estado por defecto
-                empresa_id=documento_data.empresa_id,
-                cliente_id=documento_data.cliente_id,
-                fecha_emision=datetime.today().date(),
-                hora_emision=datetime.now().time(),
-                aplica_igtf=documento_data.aplica_igtf,
-                
-            )
-            db.add(factura)
-            db.commit()
-            db.refresh(factura)
-            print(f"Factura creada: {factura}")
+        # Crear la factura
+        factura = Factura(
+            tipo_documento="Factura",
+            estado="En espera",
+            empresa_id=pedido.empresa_id,
+            cliente_id=pedido.cliente_id,
+            pedido_id=pedido.id,  # Asignar el pedido relacionado
+            fecha_emision=datetime.today().date(),
+            hora_emision=datetime.now().time(),
+            aplica_igtf=documento_data.aplica_igtf,
+        )
+        db.add(factura)
+        db.commit()
+        db.refresh(factura)
+        print(f"Factura creada: {factura}")
 
-            # Inicializamos variables para cálculos
-            monto_exento = 0
-            monto_base = 0
-            descuento_total = 0  # Inicializamos el descuento total
+        # Inicializar variables para cálculos
+        monto_exento = 0
+        monto_base = 0
+        descuento_total = 0
 
-            # Confirmar que la factura existe y está confirmada
-            factura_confirmada = (
-                db.query(Factura)
-                .filter(Factura.factura_id == factura.factura_id)
-                .first()
-            )
-            if not factura_confirmada:
-                print(
-                    "Error: La factura no se ha confirmado correctamente en la base de datos."
-                )
-                db.rollback()
-                return {
-                    "error": "La factura no se ha confirmado correctamente en la base de datos."
-                }
-            print(f"Factura confirmada: {factura_confirmada}")
+        # Procesar los detalles del pedido y convertirlos en detalles de factura
+        for detalle_pedido in pedido.detalles:
+            print(f"Procesando detalle del pedido: {detalle_pedido}")
 
-            # Procesamos los detalles de factura
-            for detalle_data in documento_data.detalles_factura:
-                print(f"Procesando detalle: {detalle_data}")
-                producto = (
-                    db.query(Producto)
-                    .filter(Producto.id == detalle_data["producto_id"])
-                    .first()
-                )
-                print(f"Producto obtenido: {producto}")
-                if not producto:
-                    print("Error: El producto no existe.")
-                    db.rollback()
-                    return {
-                        "error": "El producto no existe y es requerido para crear un detalle de factura."
-                    }
-
-                if detalle_data["cantidad"] <= 0:
-                    print("Error: La cantidad debe ser mayor a 0.")
-                    db.rollback()
-                    return {"error": "La cantidad debe ser mayor a 0."}
-
-                total_producto = detalle_data["cantidad"] * producto.precio
-                print(f"Total del producto calculado: {total_producto}")
-
-                # Calcular descuento del producto
-                descuento_producto = (
-                    detalle_data.get("descuento", 0) * detalle_data["cantidad"]
-                )
-                descuento_total += descuento_producto
-                print(f"Descuento del producto calculado: {descuento_producto}")
-
-                if producto.exento:
-                    monto_exento += total_producto
-                else:
-                    monto_base += total_producto
-
-                monto_base_con_exento = monto_base + monto_exento
-
-                # Crear detalle de factura
-                detalle_factura = DetalleFactura(
-                    factura_id=factura.factura_id,
-                    producto_id=detalle_data["producto_id"],
-                    cantidad=detalle_data["cantidad"],
-                    total=total_producto,
-                )
-                db.add(detalle_factura)
-                print(f"Detalle de factura creado: {detalle_factura}")
-
+            total_producto = detalle_pedido.cantidad * detalle_pedido.precio_unitario
+            descuento_producto = detalle_pedido.descuento * detalle_pedido.cantidad
+            descuento_total += descuento_producto
             print(
-                f"Monto exento: {monto_exento}, Monto base: {monto_base}, Descuento total: {descuento_total}"
+                f"Total del producto: {total_producto}, Descuento aplicado: {descuento_producto}"
             )
 
-            # Calculamos impuestos
-            iva_monto = round(
-                monto_base * Decimal("0.16"), 2
-            )  # Calculamos el IVA sobre el monto base sin descuento
-            print(f"IVA calculado: {iva_monto}")
-            monto_base_con_descuento = (
-                monto_base - descuento_total
-            )  # Aplicamos el descuento al monto base
+            if detalle_pedido.producto.exento:
+                print("Producto exento, no se aplica IVA.")
+                monto_exento += total_producto
+            else:
+                monto_base += total_producto
 
-            # Verificamos si aplica el IGTF
-            monto_igtf = 0
-            if factura.aplica_igtf:
-                monto_igtf = round(
-                    monto_base * Decimal("0.03"), 2
-                )  # Calculamos el 3% del monto base
-                print(f"IGTF calculado: {monto_igtf}")
-
-            # Calculamos el subtotal y total de la factura
-            subtotal = (
-                monto_base_con_descuento + iva_monto
-            )  # Sumamos el IVA al monto base con descuento
-            total_factura = subtotal + monto_igtf  # Agregamos el IGTF al subtotal
-            print(
-                f"Monto base con descuento: {monto_base_con_descuento}, Subtotal calculado: {subtotal}, Total con IGTF: {total_factura}"
-            )
-
-            # Definimos los impuestos después de calcular el IVA
-            impuestos = [
-                {"base": monto_base, "monto": iva_monto, "monto_exento": monto_exento}
-            ]
-            print(f"Impuestos definidos: {impuestos}")
-
-            # Actualizamos la factura con los cálculos
-            factura.total = total_factura
-            factura.descuento_total = (
-                descuento_total  # Guardamos el descuento total en la factura
-            )
-            factura.monto_igtf = monto_igtf  # Guardamos el monto del IGTF en la factura
-            db.add(factura)
-            db.commit()
-            db.refresh(factura)
-
-            for impuesto_data in impuestos:
-                impuesto = iva(factura_id=factura.factura_id, **impuesto_data)
-                db.add(impuesto)
-
-            # Guardar las operaciones relacionadas con la factura
-            operacion = create_operacion(
-                db,
+            # Crear detalle de factura
+            detalle_factura = DetalleFactura(
                 factura_id=factura.factura_id,
-                tipo="Venta",
-                monto=monto_base_con_exento,
+                producto_id=detalle_pedido.producto_id,
+                cantidad=detalle_pedido.cantidad,
+                total=total_producto,
             )
-            db.add(operacion)
-            db.commit()
-            db.refresh(operacion)
-            print(f"Operación guardada: {operacion}")
+            db.add(detalle_factura)
+            print(f"Detalle de factura creado: {detalle_factura}")
 
-            db.commit()
-            print("Factura creada exitosamente.")
-            return factura
+        print(
+            f"Monto exento: {monto_exento}, Monto base: {monto_base}, Descuento total: {descuento_total}"
+        )
 
-        except Exception as e:
-            print(f"Error interno al procesar la factura: {str(e)}")
-            db.rollback()
-            return {
-                "error": f"Ocurrió un error interno al procesar la factura: {str(e)}"
-            }
+        # Calcular impuestos
+        iva_monto = round(monto_base * Decimal("0.16"), 2)
+        print(f"IVA calculado: {iva_monto}")
+
+        # Verificar si aplica el IGTF
+        monto_igtf = 0
+        if factura.aplica_igtf:
+            monto_igtf = round(monto_base * Decimal("0.03"), 2)
+            print(f"IGTF calculado: {monto_igtf}")
+
+        # Calcular el total de la factura
+        subtotal = monto_base - descuento_total + iva_monto
+        total_factura = subtotal + monto_igtf
+        print(f"Subtotal: {subtotal}, Total factura: {total_factura}")
+
+        # Actualizar la factura con los cálculos
+        factura.total = total_factura
+        factura.descuento_total = descuento_total
+        factura.monto_igtf = monto_igtf
+        db.add(factura)
+        db.commit()
+        db.refresh(factura)
+
+        # Crear impuestos
+        impuesto = iva(
+            factura_id=factura.factura_id,
+            base=monto_base,
+            monto=iva_monto,
+            monto_exento=monto_exento,
+        )
+        db.add(impuesto)
+
+        # Crear operación
+        operacion = create_operacion(
+            db, factura_id=factura.factura_id, tipo="Venta", monto=monto_base
+        )
+        db.add(operacion)
+        db.commit()
+        db.refresh(operacion)
+        print(f"Operación creada: {operacion}")
+
+        # Actualizar el estado del pedido
+        pedido.estado = "facturado"
+        db.commit()
+        print("Pedido actualizado a estado 'facturado'.")
+
+        print("Factura creada exitosamente.")
+
+        # Convertir el pedido a factura
+        convert_pedido(db, pedido.id)  # Convertir el pedido a factura
+        return factura
 
     except Exception as e:
-        print(f"Error general al crear la factura: {str(e)}")
+        print(f"Error al crear la factura: {str(e)}")
+
+        # Rollback manual: eliminar entidades creadas
+        if 'factura' in locals():
+            db.query(DetalleFactura).filter(DetalleFactura.factura_id == factura.factura_id).delete()
+            db.query(iva).filter(iva.factura_id == factura.factura_id).delete()
+            db.query(Operacion).filter(Operacion.factura_id == factura.factura_id).delete()
+            db.query(Factura).filter(Factura.factura_id == factura.factura_id).delete()
+            db.commit()
+            print("Rollback manual ejecutado: entidades eliminadas.")
+
         db.rollback()
-        return {"error": f"Ocurrió un error general al crear la factura: {str(e)}"}
+        return {"error": f"Ocurrió un error al crear la factura: {str(e)}"}
 
 
 def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):

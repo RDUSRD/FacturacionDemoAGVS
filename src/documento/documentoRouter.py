@@ -73,22 +73,22 @@ def create_factura_endpoint(factura_data: FacturaSchema, db: Session = Depends(g
     return get_or_create_factura(db, factura_data)
 
 
-@router.post("/create/orden-entrega")
-def create_orden_entrega_endpoint(
-    orden_entrega_data: OrdenEntregaSchema, db: Session = Depends(get_db)
-):
-    return get_or_create_orden_entrega(db, orden_entrega_data)
+# @router.post("/create/orden-entrega")
+# def create_orden_entrega_endpoint(
+#     orden_entrega_data: OrdenEntregaSchema, db: Session = Depends(get_db)
+# ):
+#     return get_or_create_orden_entrega(db, orden_entrega_data)
 
 
-@router.post("/create/nota-credito")
-def create_nota_credito_endpoint(
-    nota_credito_data: NotaCreditoSchema, db: Session = Depends(get_db)
-):
-    return get_or_create_nota_credito(db, nota_credito_data)
+# @router.post("/create/nota-credito")
+# def create_nota_credito_endpoint(
+#     nota_credito_data: NotaCreditoSchema, db: Session = Depends(get_db)
+# ):
+#     return get_or_create_nota_credito(db, nota_credito_data)
 
 
-@router.post("/create/nota-debito")
-def create_nota_debito_endpoint(
-    nota_debito_data: NotaDebitoSchema, db: Session = Depends(get_db)
-):
-    return get_or_create_nota_debito(db, nota_debito_data)
+# @router.post("/create/nota-debito")
+# def create_nota_debito_endpoint(
+#     nota_debito_data: NotaDebitoSchema, db: Session = Depends(get_db)
+# ):
+#     return get_or_create_nota_debito(db, nota_debito_data)

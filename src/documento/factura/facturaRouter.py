@@ -8,6 +8,9 @@ from src.documento.factura.facturaService import (
     get_all_facturas,
     get_operaciones_by_factura_id,
     get_iva_by_factura_id,
+    get_detalles_factura_by_factura_id,
+    get_factura_by_numero_control,
+    get_pedido_by_factura_id,
 )
 
 
@@ -28,7 +31,9 @@ def get_factura(factura_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/numero-control/{numero_control}")
-def get_factura_by_numero_control(numero_control: str, db: Session = Depends(get_db)):
+def get_factura_by_numero_control_route(
+    numero_control: str, db: Session = Depends(get_db)
+):
     factura = get_factura_by_numero_control(db, numero_control)
     if not factura:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
@@ -72,3 +77,25 @@ def fetch_operaciones_by_factura_id(factura_id: int, db: Session = Depends(get_d
             status_code=404, detail="Operaciones no encontradas para la factura"
         )
     return operaciones
+
+
+@router.get("/{factura_id}/detalles")
+def fetch_detalles_factura_by_factura_id(
+    factura_id: int, db: Session = Depends(get_db)
+):
+    detalles_factura = get_detalles_factura_by_factura_id(db, factura_id)
+    if not detalles_factura:
+        raise HTTPException(
+            status_code=404, detail="Detalles de factura no encontrados"
+        )
+    return detalles_factura
+
+
+@router.get("/{factura_id}/pedido")
+def fetch_pedido_by_factura_id(factura_id: int, db: Session = Depends(get_db)):
+    pedido = get_pedido_by_factura_id(db, factura_id)
+    if not pedido:
+        raise HTTPException(
+            status_code=404, detail="Pedido no encontrado para la factura"
+        )
+    return pedido
