@@ -17,3 +17,4 @@ class Producto(Base):
     descuento = Column(DECIMAL(10, 2), nullable=True, default=0.0)
 
     detalles_factura = relationship("DetalleFactura", back_populates="producto")
+    detalles_pedido = relationship("DetallePedido", back_populates="producto")

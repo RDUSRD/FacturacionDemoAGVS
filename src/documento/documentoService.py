@@ -15,7 +15,7 @@ from src.documento.orden_entrega.ordenEntregaModel import OrdenEntrega
 from src.documento.notas.notaModel import NotaCredito, NotaDebito
 from src.documento.factura.iva.ivaModel import iva
 from src.documento.factura.operacion.operacionModel import Operacion
-from src.detalleFactura.detalleFacturaModel import DetalleFactura
+from src.documento.factura.detalleFactura.detalleFacturaModel import DetalleFactura
 from src.producto.prodModel import Producto
 from datetime import datetime
 import random

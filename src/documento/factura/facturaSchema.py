@@ -32,7 +32,7 @@ class FacturaSchema(DocumentoSchema):
     detalles_factura: list = Field(
         ...,
         description="Lista de detalles de la factura",
-        example=[{"factura_id": 1, "producto_id": 1, "cantidad": 2}],
+        example=[{"producto_id": 1, "cantidad": 2}],
     )
     aplica_igtf: bool = Field(..., description="Indica si aplica el IGTF", example=True)
     monto_igtf: Optional[float] = Field(
@@ -48,7 +48,7 @@ class FacturaSchema(DocumentoSchema):
                 "empresa_id": 1,
                 "aplica_igtf": True,
                 "detalles_factura": [
-                    {"factura_id": 1, "producto_id": 1, "cantidad": 2}
+                    {"producto_id": 1, "cantidad": 2}
                 ],
             }
         }

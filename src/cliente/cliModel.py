@@ -13,3 +13,4 @@ class Cliente(Base):
     date_updated = Column(String(50), nullable=True)
 
     documentos = relationship("Documento", back_populates="cliente")
+    pedidos = relationship("Pedido", back_populates="cliente")

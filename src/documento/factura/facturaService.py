@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from src.documento.factura.facModel import Factura
 from src.documento.factura.iva.ivaModel import iva
 from src.documento.factura.operacion.operacionModel import Operacion
-from src.detalleFactura.detalleFacturaModel import DetalleFactura
+from src.documento.factura.detalleFactura.detalleFacturaModel import DetalleFactura
 
 
 def get_all_facturas(db: Session):

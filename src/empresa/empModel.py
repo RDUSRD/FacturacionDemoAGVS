@@ -15,3 +15,4 @@ class Empresa(Base):
     date_updated = Column(String(50), nullable=True)
 
     documentos = relationship("Documento", back_populates="empresa")
+    pedidos = relationship("Pedido", back_populates="empresa")

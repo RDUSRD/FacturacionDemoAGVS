@@ -29,6 +29,7 @@ import logging
 from src.empresa.empresaRouter import router as empresa_router
 from src.cliente.clienteRouter import router as cliente_router
 from src.documento.documentoRouter import router as documento_router
+from src.pedidos.pedidoRouter import router as pedido_router
 from src.documento.factura.facturaRouter import router as factura_router
 from src.documento.notas.notaRouter import router as nota_router
 from src.documento.orden_entrega.ordenEntregaRouter import (
@@ -38,7 +39,9 @@ from src.comprobante_retencion.comprobanteRetencionRouter import (
     router as comprobante_retencion_router,
 )
 from src.producto.productoRouter import router as producto_router
-from src.detalleFactura.detalleFacturaRouter import router as detalle_factura_router
+from src.documento.factura.detalleFactura.detalleFacturaRouter import (
+    router as detalle_factura_router,
+)
 from src.auditoria.audRouter import router as auditoria_router
 from src.auth.auth_routes import router as auth_router
 
@@ -104,6 +107,7 @@ app.mount(
     name="static",
 )
 
+
 # Middleware para manejar sesiones
 @app.middleware("http")
 async def authentik_swagger_protection(request: Request, call_next):
@@ -128,7 +132,9 @@ async def authentik_swagger_protection(request: Request, call_next):
             state = secrets.token_urlsafe(16)
 
             # Redirigir al proveedor OAuth con el estado
-            response = await oauth.authentik.authorize_redirect(request, redirect_uri, state=state)
+            response = await oauth.authentik.authorize_redirect(
+                request, redirect_uri, state=state
+            )
 
             # Almacenar el estado en una cookie
             response.set_cookie(key="oauth_state", value=state, httponly=True)
@@ -142,12 +148,13 @@ async def authentik_swagger_protection(request: Request, call_next):
 # Incluir routers con tags para organización
 app.include_router(empresa_router)
 app.include_router(cliente_router)
+app.include_router(producto_router)
+app.include_router(pedido_router)
 app.include_router(documento_router)
 app.include_router(factura_router)
 app.include_router(nota_router)
 app.include_router(orden_entrega_router)
 app.include_router(comprobante_retencion_router)
-app.include_router(producto_router)
 app.include_router(detalle_factura_router)
 app.include_router(auditoria_router)
 app.include_router(auth_router)

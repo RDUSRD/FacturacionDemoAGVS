@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from src.detalleFactura.detalleFacturaModel import DetalleFactura
-from src.detalleFactura.detalleFacturaSchema import (
+from src.documento.factura.detalleFactura.detalleFacturaModel import DetalleFactura
+from src.documento.factura.detalleFactura.detalleFacturaSchema import (
     DetalleFacturaSchema,
     DetalleFacturaUpdateSchema,
 )
