@@ -13,6 +13,7 @@ class Factura(Documento):
     total = Column(Float, nullable=True)
     aplica_igtf = Column(Boolean, nullable=False, default=False)  # Indica si aplica el IGTF
     monto_igtf = Column(Float, nullable=True, default=0.0)  # Monto del IGTF si aplica
+    monto_dolares = Column(Float, nullable=True, default=0.0)  # Monto en dólares si aplica
 
     detalles_factura = relationship(
         "DetalleFactura", back_populates="factura", cascade="all, delete-orphan"

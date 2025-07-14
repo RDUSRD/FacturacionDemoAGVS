@@ -29,6 +29,7 @@ from src.cliente.clienteRouter import router as cliente_router
 from src.documento.documentoRouter import router as documento_router
 from src.pedidos.pedidoRouter import router as pedido_router
 from src.documento.factura.facturaRouter import router as factura_router
+from src.monedas.monedaRouter import router as moneda_router
 
 # from src.documento.notas.notaRouter import router as nota_router
 # from src.documento.orden_entrega.ordenEntregaRouter import (
@@ -43,8 +44,9 @@ from src.documento.factura.detalleFactura.detalleFacturaRouter import (
 )
 
 # from src.auditoria.audRouter import router as auditoria_router
-# from src.auth.auth_routes import router as auth_router
+from src.auth.auth_routes import router as auth_router
 from src.utils.custom_handlers import authentik_swagger_protection, custom_404_handler
+from src.utils.cron.updateDolar import iniciar_cron_job, detener_cron_job
 
 # Cargar variables de entorno
 load_dotenv()
@@ -56,9 +58,9 @@ authentik_oauth2_scheme = OAuth2AuthorizationCodeBearer(
 )
 
 
-async def lifespan_with_reset(app: FastAPI):
+async def lifespan_with_cron(app: FastAPI):
     """
-    Resets the database by dropping and recreating all tables during application startup.
+    Lifespan event handler to manage the application lifecycle with cron job initialization and cleanup.
 
     Args:
         app (FastAPI): The FastAPI application instance.
@@ -66,26 +68,43 @@ async def lifespan_with_reset(app: FastAPI):
     Yields:
         None
     """
+    # Iniciar el cron job al inicio de la aplicación
+    iniciar_cron_job()
+    app_logger.info("Cron job para actualizar el dólar iniciado.")
+
+    yield
+
+    # Detener el cron job al apagar la aplicación
+    detener_cron_job()
+    app_logger.info("Aplicación FastAPI apagada correctamente.")
+
+
+async def lifespan_with_reset_and_cron(app: FastAPI):
+    """
+    Lifespan event handler to manage the application lifecycle with database reset and cron job initialization.
+
+    Args:
+        app (FastAPI): The FastAPI application instance.
+
+    Yields:
+        None
+    """
+    # Reiniciar la base de datos
     print("Reiniciando la base de datos...")
     Base.metadata.drop_all(bind=engine)
     print("Tablas eliminadas correctamente.")
     Base.metadata.create_all(bind=engine)
     print("Tablas recreadas correctamente.")
+
+    # Iniciar el cron job al inicio de la aplicación
+    iniciar_cron_job()
+    app_logger.info("Cron job para actualizar el dólar iniciado.")
+
     yield
 
-
-async def lifespan_without_reset(app: FastAPI):
-    """
-    Starts the application without resetting the database.
-
-    Args:
-        app (FastAPI): The FastAPI application instance.
-
-    Yields:
-        None
-    """
-    print("Iniciando la aplicación sin reiniciar la base de datos...")
-    yield
+    # Detener el cron job al apagar la aplicación
+    detener_cron_job()
+    app_logger.info("Aplicación FastAPI apagada correctamente.")
 
 
 # Configurar la aplicación FastAPI
@@ -97,7 +116,7 @@ app = FastAPI(
     description="API para la gestión de documentos y facturación",
     title="API Facturacion AGV Services",
     version="1.0.0",
-    lifespan=lifespan_with_reset if USE_RESET else lifespan_without_reset,
+    lifespan=lifespan_with_reset_and_cron if USE_RESET else lifespan_with_cron,
 )
 
 # Middleware para servir archivos estáticos
@@ -120,8 +139,9 @@ app.include_router(factura_router)
 # app.include_router(orden_entrega_router)
 # app.include_router(comprobante_retencion_router)
 app.include_router(detalle_factura_router)
+app.include_router(moneda_router)
 # app.include_router(auditoria_router)
-# app.include_router(auth_router)
+app.include_router(auth_router)
 
 # Registrar un log al iniciar la aplicación
 app_logger.info("Aplicación FastAPI iniciada correctamente")

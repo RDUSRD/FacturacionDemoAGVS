@@ -18,6 +18,7 @@ from src.documento.factura.operacion.operacionModel import Operacion
 from src.documento.factura.detalleFactura.detalleFacturaModel import DetalleFactura
 from src.pedidos.pedidoModel import Pedido  # Importar el modelo Pedido
 from src.pedidos.pedidoService import convert_pedido
+from src.monedas.dolar.dolarService import obtener_dolar_bcv
 from datetime import datetime
 import random
 
@@ -98,6 +99,13 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
             db.rollback()
             return {"error": "El pedido no está en un estado válido para facturación."}
 
+        # obtener el precio del BCV
+        precio_bcv = obtener_dolar_bcv(db)
+        if not isinstance(precio_bcv, (int, float)) or precio_bcv <= 0:
+            print("Error: El precio del BCV no es válido.")
+            db.rollback()
+            return {"error": "El precio del BCV no es válido."}
+
         # Crear la factura
         factura = Factura(
             tipo_documento="Factura",
@@ -159,6 +167,7 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
         if factura.aplica_igtf:
             monto_igtf = round(monto_base * Decimal("0.03"), 2)
             print(f"IGTF calculado: {monto_igtf}")
+            monto_dolares = round(monto_base / Decimal(precio_bcv), 2) if precio_bcv else 0
 
         # Calcular el total de la factura
         subtotal = monto_base - descuento_total + iva_monto
@@ -169,6 +178,7 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
         factura.total = total_factura
         factura.descuento_total = descuento_total
         factura.monto_igtf = monto_igtf
+        factura.monto_dolares = monto_dolares if factura.aplica_igtf else 0.0
         db.add(factura)
         db.commit()
         db.refresh(factura)
@@ -206,10 +216,14 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
         print(f"Error al crear la factura: {str(e)}")
 
         # Rollback manual: eliminar entidades creadas
-        if 'factura' in locals():
-            db.query(DetalleFactura).filter(DetalleFactura.factura_id == factura.factura_id).delete()
+        if "factura" in locals():
+            db.query(DetalleFactura).filter(
+                DetalleFactura.factura_id == factura.factura_id
+            ).delete()
             db.query(iva).filter(iva.factura_id == factura.factura_id).delete()
-            db.query(Operacion).filter(Operacion.factura_id == factura.factura_id).delete()
+            db.query(Operacion).filter(
+                Operacion.factura_id == factura.factura_id
+            ).delete()
             db.query(Factura).filter(Factura.factura_id == factura.factura_id).delete()
             db.commit()
             print("Rollback manual ejecutado: entidades eliminadas.")

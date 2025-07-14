@@ -11,3 +11,6 @@ httpx
 itsdangerous
 watchgod
 starlette
+requests
+bs4
+apscheduler
