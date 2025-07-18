@@ -1,0 +1,1929 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FacturacionDemoAGVS API",
+    "description": "API para la gestión de documentos y facturación.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Servidor local de desarrollo"
+    }
+  ],
+  "paths": {
+    "/empresa": {
+      "get": {
+        "tags": [
+          "empresa"
+        ],
+        "summary": "Obtener todas las empresas",
+        "description": "Devuelve una lista de todas las empresas registradas en el sistema.",
+        "responses": {
+          "200": {
+            "description": "Lista de empresas obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "nombre": {
+                        "type": "string",
+                        "example": "Empresa XYZ"
+                      },
+                      "rif": {
+                        "type": "string",
+                        "example": "J-12345678-9"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "empresa"
+        ],
+        "summary": "Crear o recuperar una empresa",
+        "description": "Crea una nueva empresa o recupera una existente basada en los datos proporcionados.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "Empresa XYZ"
+                  },
+                  "rif": {
+                    "type": "string",
+                    "example": "J-12345678-9"
+                  },
+                  "domicilio_fiscal": {
+                    "type": "string",
+                    "example": "Av. Principal, Edificio XYZ, Caracas"
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "example": "+584121234567"
+                  },
+                  "email": {
+                    "type": "string",
+                    "example": "contacto@empresa.com"
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "rif",
+                  "domicilio_fiscal",
+                  "telefono",
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Empresa creada o recuperada exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "example": "Empresa XYZ"
+                    },
+                    "rif": {
+                      "type": "string",
+                      "example": "J-12345678-9"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos proporcionados"
+          }
+        }
+      }
+    },
+    "/empresa/{empresa_id}": {
+      "get": {
+        "tags": [
+          "empresa"
+        ],
+        "summary": "Obtener una empresa por ID",
+        "description": "Devuelve los detalles de una empresa específica identificada por su ID.",
+        "parameters": [
+          {
+            "name": "empresa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles de la empresa obtenidos exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "example": "Empresa XYZ"
+                    },
+                    "rif": {
+                      "type": "string",
+                      "example": "J-12345678-9"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Empresa no encontrada"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "empresa"
+        ],
+        "summary": "Actualizar una empresa por ID",
+        "description": "Actualiza los detalles de una empresa específica identificada por su ID.",
+        "parameters": [
+          {
+            "name": "empresa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "Empresa Actualizada"
+                  },
+                  "rif": {
+                    "type": "string",
+                    "example": "J-98765432-1"
+                  },
+                  "domicilio_fiscal": {
+                    "type": "string",
+                    "example": "Av. Secundaria, Edificio ABC, Caracas"
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "example": "+584121234568"
+                  },
+                  "email": {
+                    "type": "string",
+                    "example": "actualizado@empresa.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Empresa actualizada correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "example": "Empresa Actualizada"
+                    },
+                    "rif": {
+                      "type": "string",
+                      "example": "J-98765432-1"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Empresa no encontrada"
+          },
+          "400": {
+            "description": "Datos inválidos proporcionados"
+          }
+        }
+      }
+    },
+    "/cliente": {
+      "get": {
+        "tags": [
+          "cliente"
+        ],
+        "summary": "Obtener todos los clientes",
+        "description": "Devuelve una lista de todos los clientes registrados en el sistema.",
+        "responses": {
+          "200": {
+            "description": "Lista de clientes obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "nombre": {
+                        "type": "string",
+                        "example": "Cliente XYZ"
+                      },
+                      "rif": {
+                        "type": "string",
+                        "example": "J-12345678-9"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "cliente"
+        ],
+        "summary": "Crear o recuperar un cliente",
+        "description": "Crea un nuevo cliente o recupera uno existente basado en los datos proporcionados.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "Cliente XYZ"
+                  },
+                  "rif": {
+                    "type": "string",
+                    "example": "J-12345678-9"
+                  },
+                  "domicilio_fiscal": {
+                    "type": "string",
+                    "example": "Av. Principal, Edificio XYZ, Caracas"
+                  }
+                },
+                "required": [
+                  "nombre",
+                  "rif",
+                  "domicilio_fiscal"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cliente creado o recuperado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "example": "Cliente XYZ"
+                    },
+                    "rif": {
+                      "type": "string",
+                      "example": "J-12345678-9"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos proporcionados"
+          }
+        }
+      }
+    },
+    "/cliente/{cliente_id}": {
+      "get": {
+        "tags": [
+          "cliente"
+        ],
+        "summary": "Obtener un cliente por ID",
+        "description": "Devuelve los detalles de un cliente específico identificado por su ID.",
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles del cliente obtenidos exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "example": "Cliente XYZ"
+                    },
+                    "rif": {
+                      "type": "string",
+                      "example": "J-12345678-9"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cliente no encontrado"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "cliente"
+        ],
+        "summary": "Actualizar un cliente por ID",
+        "description": "Actualiza los detalles de un cliente específico identificado por su ID.",
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "Cliente Actualizado"
+                  },
+                  "rif": {
+                    "type": "string",
+                    "example": "J-98765432-1"
+                  },
+                  "domicilio_fiscal": {
+                    "type": "string",
+                    "example": "Av. Secundaria, Edificio ABC, Caracas"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cliente actualizado correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "example": "Cliente Actualizado"
+                    },
+                    "rif": {
+                      "type": "string",
+                      "example": "J-98765432-1"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cliente no encontrado"
+          },
+          "400": {
+            "description": "Datos inválidos proporcionados"
+          }
+        }
+      }
+    },
+    "/producto": {
+      "get": {
+        "tags": [
+          "producto"
+        ],
+        "summary": "Obtener todos los productos",
+        "description": "Devuelve una lista de todos los productos registrados en el sistema.",
+        "responses": {
+          "200": {
+            "description": "Lista de productos obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "descripcion": {
+                        "type": "string",
+                        "example": "Producto de alta calidad"
+                      },
+                      "precio": {
+                        "type": "number",
+                        "example": 50.0
+                      },
+                      "status": {
+                        "type": "string",
+                        "example": "activo"
+                      },
+                      "stock": {
+                        "type": "integer",
+                        "example": 100
+                      },
+                      "exento": {
+                        "type": "boolean",
+                        "example": false
+                      },
+                      "descuento": {
+                        "type": "number",
+                        "example": 10.0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "producto"
+        ],
+        "summary": "Crear o recuperar un producto",
+        "description": "Crea un nuevo producto o recupera uno existente basado en los datos proporcionados.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "descripcion": {
+                    "type": "string",
+                    "example": "Producto de alta calidad"
+                  },
+                  "precio": {
+                    "type": "number",
+                    "example": 50.0
+                  },
+                  "status": {
+                    "type": "string",
+                    "example": "activo"
+                  },
+                  "stock": {
+                    "type": "integer",
+                    "example": 100
+                  },
+                  "exento": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "descuento": {
+                    "type": "number",
+                    "example": 10.0
+                  }
+                },
+                "required": [
+                  "descripcion",
+                  "precio",
+                  "status",
+                  "stock",
+                  "exento"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Producto creado o recuperado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "descripcion": {
+                      "type": "string",
+                      "example": "Producto de alta calidad"
+                    },
+                    "precio": {
+                      "type": "number",
+                      "example": 50.0
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "activo"
+                    },
+                    "stock": {
+                      "type": "integer",
+                      "example": 100
+                    },
+                    "exento": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "descuento": {
+                      "type": "number",
+                      "example": 10.0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos proporcionados"
+          }
+        }
+      }
+    },
+    "/producto/{producto_id}": {
+      "get": {
+        "tags": [
+          "producto"
+        ],
+        "summary": "Obtener un producto por ID",
+        "description": "Devuelve los detalles de un producto específico identificado por su ID.",
+        "parameters": [
+          {
+            "name": "producto_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles del producto obtenidos exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "descripcion": {
+                      "type": "string",
+                      "example": "Producto de alta calidad"
+                    },
+                    "precio": {
+                      "type": "number",
+                      "example": 50.0
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "activo"
+                    },
+                    "stock": {
+                      "type": "integer",
+                      "example": 100
+                    },
+                    "exento": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "descuento": {
+                      "type": "number",
+                      "example": 10.0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Producto no encontrado"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "producto"
+        ],
+        "summary": "Actualizar un producto por ID",
+        "description": "Actualiza los detalles de un producto específico identificado por su ID.",
+        "parameters": [
+          {
+            "name": "producto_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "descripcion": {
+                    "type": "string",
+                    "example": "Producto Actualizado"
+                  },
+                  "precio": {
+                    "type": "number",
+                    "example": 60.0
+                  },
+                  "status": {
+                    "type": "string",
+                    "example": "inactivo"
+                  },
+                  "stock": {
+                    "type": "integer",
+                    "example": 50
+                  },
+                  "exento": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "descuento": {
+                    "type": "number",
+                    "example": 5.0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Producto actualizado correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "descripcion": {
+                      "type": "string",
+                      "example": "Producto Actualizado"
+                    },
+                    "precio": {
+                      "type": "number",
+                      "example": 60.0
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "inactivo"
+                    },
+                    "stock": {
+                      "type": "integer",
+                      "example": 50
+                    },
+                    "exento": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "descuento": {
+                      "type": "number",
+                      "example": 5.0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Producto no encontrado"
+          },
+          "400": {
+            "description": "Datos inválidos proporcionados"
+          }
+        }
+      }
+    },
+    "/producto/codigo/{codigo}": {
+      "get": {
+        "tags": [
+          "producto"
+        ],
+        "summary": "Obtener un producto por código",
+        "description": "Devuelve los detalles de un producto específico identificado por su código.",
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "PROD123"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles del producto"
+          },
+          "404": {
+            "description": "Producto no encontrado"
+          }
+        }
+      }
+    },
+    "/producto/codigo_barras/{codigo_barras}": {
+      "get": {
+        "tags": [
+          "producto"
+        ],
+        "summary": "Obtener un producto por código de barras",
+        "description": "Devuelve los detalles de un producto específico identificado por su código de barras.",
+        "parameters": [
+          {
+            "name": "codigo_barras",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1234567890123"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles del producto"
+          },
+          "404": {
+            "description": "Producto no encontrado"
+          }
+        }
+      }
+    },
+    "/producto/codigo_QR/{codigo_QR}": {
+      "get": {
+        "tags": [
+          "producto"
+        ],
+        "summary": "Obtener un producto por código QR",
+        "description": "Devuelve los detalles de un producto específico identificado por su código QR.",
+        "parameters": [
+          {
+            "name": "codigo_QR",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "QR123456789"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles del producto"
+          },
+          "404": {
+            "description": "Producto no encontrado"
+          }
+        }
+      }
+    },
+    "/producto/exento": {
+      "get": {
+        "tags": [
+          "producto"
+        ],
+        "summary": "Obtener productos exentos",
+        "description": "Devuelve una lista de productos exentos de impuestos.",
+        "responses": {
+          "200": {
+            "description": "Lista de productos exentos"
+          }
+        }
+      }
+    },
+    "/pedidos": {
+      "post": {
+        "tags": [
+          "pedidos"
+        ],
+        "summary": "Crear un nuevo pedido",
+        "description": "Crea un nuevo pedido basado en los datos proporcionados, incluyendo cliente, empresa y detalles del pedido.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cliente_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "empresa_id": {
+                    "type": "integer",
+                    "example": 101
+                  },
+                  "observaciones": {
+                    "type": "string",
+                    "example": "Pedido urgente"
+                  },
+                  "detalles_pedido": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "producto_id": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "cantidad": {
+                          "type": "integer",
+                          "example": 2
+                        },
+                        "precio": {
+                          "type": "number",
+                          "example": 250.0
+                        }
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "cliente_id",
+                  "empresa_id",
+                  "detalles_pedido"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pedido creado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "cliente_id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "empresa_id": {
+                      "type": "integer",
+                      "example": 101
+                    },
+                    "observaciones": {
+                      "type": "string",
+                      "example": "Pedido urgente"
+                    },
+                    "detalles_pedido": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "producto_id": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "cantidad": {
+                            "type": "integer",
+                            "example": 2
+                          },
+                          "precio": {
+                            "type": "number",
+                            "example": 250.0
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos proporcionados"
+          }
+        }
+      }
+    },
+    "/pedidos/{pedido_id}": {
+      "get": {
+        "tags": [
+          "pedidos"
+        ],
+        "summary": "Obtener un pedido por ID",
+        "description": "Devuelve los detalles de un pedido específico identificado por su ID.",
+        "parameters": [
+          {
+            "name": "pedido_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles del pedido obtenidos exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "cliente_id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "empresa_id": {
+                      "type": "integer",
+                      "example": 101
+                    },
+                    "observaciones": {
+                      "type": "string",
+                      "example": "Pedido urgente"
+                    },
+                    "detalles_pedido": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "producto_id": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "cantidad": {
+                            "type": "integer",
+                            "example": 2
+                          },
+                          "precio": {
+                            "type": "number",
+                            "example": 250.0
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pedido no encontrado"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "pedidos"
+        ],
+        "summary": "Actualizar un pedido por ID",
+        "description": "Actualiza los detalles de un pedido específico identificado por su ID.",
+        "parameters": [
+          {
+            "name": "pedido_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cliente_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "empresa_id": {
+                    "type": "integer",
+                    "example": 101
+                  },
+                  "observaciones": {
+                    "type": "string",
+                    "example": "Pedido actualizado"
+                  },
+                  "detalles_pedido": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "producto_id": {
+                          "type": "integer",
+                          "example": 2
+                        },
+                        "cantidad": {
+                          "type": "integer",
+                          "example": 3
+                        },
+                        "precio": {
+                          "type": "number",
+                          "example": 300.0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pedido actualizado correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "cliente_id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "empresa_id": {
+                      "type": "integer",
+                      "example": 101
+                    },
+                    "observaciones": {
+                      "type": "string",
+                      "example": "Pedido actualizado"
+                    },
+                    "detalles_pedido": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "producto_id": {
+                            "type": "integer",
+                            "example": 2
+                          },
+                          "cantidad": {
+                            "type": "integer",
+                            "example": 3
+                          },
+                          "precio": {
+                            "type": "number",
+                            "example": 300.0
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pedido no encontrado"
+          },
+          "400": {
+            "description": "Datos inválidos proporcionados"
+          }
+        }
+      }
+    },
+    "/documento": {
+      "get": {
+        "tags": [
+          "documento"
+        ],
+        "summary": "Obtener todos los documentos",
+        "description": "Devuelve una lista de todos los documentos registrados en el sistema.",
+        "responses": {
+          "200": {
+            "description": "Lista de documentos obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "numero_control": {
+                        "type": "string",
+                        "example": "NC123456"
+                      },
+                      "empresa_id": {
+                        "type": "integer",
+                        "example": 101
+                      },
+                      "cliente_id": {
+                        "type": "integer",
+                        "example": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documento/{documento_id}": {
+      "get": {
+        "tags": [
+          "documento"
+        ],
+        "summary": "Obtener un documento por ID",
+        "description": "Devuelve los detalles de un documento específico identificado por su ID.",
+        "parameters": [
+          {
+            "name": "documento_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles del documento obtenidos exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "numero_control": {
+                      "type": "string",
+                      "example": "NC123456"
+                    },
+                    "empresa_id": {
+                      "type": "integer",
+                      "example": 101
+                    },
+                    "cliente_id": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Documento no encontrado"
+          }
+        }
+      }
+    },
+    "/documento/numero-control/{numero_control}": {
+      "get": {
+        "tags": [
+          "documento"
+        ],
+        "summary": "Obtener un documento por número de control",
+        "description": "Devuelve los detalles de un documento específico identificado por su número de control.",
+        "parameters": [
+          {
+            "name": "numero_control",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "NC123456"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles del documento"
+          },
+          "404": {
+            "description": "Documento no encontrado"
+          }
+        }
+      }
+    },
+    "/documento/empresa/{empresa_id}": {
+      "get": {
+        "tags": [
+          "documento"
+        ],
+        "summary": "Obtener documentos por ID de empresa",
+        "description": "Devuelve una lista de documentos asociados a una empresa específica identificada por su ID.",
+        "parameters": [
+          {
+            "name": "empresa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 101
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de documentos"
+          },
+          "404": {
+            "description": "No se encontraron documentos para la empresa especificada"
+          }
+        }
+      }
+    },
+    "/documento/cliente/{cliente_id}": {
+      "get": {
+        "tags": [
+          "documento"
+        ],
+        "summary": "Obtener documentos por ID de cliente",
+        "description": "Devuelve una lista de documentos asociados a un cliente específico identificado por su ID.",
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de documentos"
+          },
+          "404": {
+            "description": "No se encontraron documentos para el cliente especificado"
+          }
+        }
+      }
+    },
+    "/documento/create/factura": {
+      "post": {
+        "tags": [
+          "documento"
+        ],
+        "summary": "Crear o recuperar una factura",
+        "description": "Crea una nueva factura basada en un pedido existente identificado por su ID.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pedido_id": {
+                    "type": "integer",
+                    "example": 1
+                  }
+                },
+                "required": [
+                  "pedido_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Factura creada o recuperada exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "pedido_id": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/factura": {
+      "get": {
+        "tags": [
+          "factura"
+        ],
+        "summary": "Obtener todas las facturas",
+        "description": "Devuelve una lista de todas las facturas registradas en el sistema.",
+        "responses": {
+          "200": {
+            "description": "Lista de facturas obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "numero_control": {
+                        "type": "string",
+                        "example": "NC123456"
+                      },
+                      "empresa_id": {
+                        "type": "integer",
+                        "example": 101
+                      },
+                      "cliente_id": {
+                        "type": "integer",
+                        "example": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/factura/{factura_id}": {
+      "get": {
+        "tags": [
+          "factura"
+        ],
+        "summary": "Obtener una factura por ID",
+        "description": "Devuelve los detalles de una factura específica identificada por su ID.",
+        "parameters": [
+          {
+            "name": "factura_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles de la factura obtenidos exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "numero_control": {
+                      "type": "string",
+                      "example": "NC123456"
+                    },
+                    "empresa_id": {
+                      "type": "integer",
+                      "example": 101
+                    },
+                    "cliente_id": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Factura no encontrada"
+          }
+        }
+      }
+    },
+    "/factura/numero-control/{numero_control}": {
+      "get": {
+        "tags": [
+          "factura"
+        ],
+        "summary": "Obtener una factura por número de control",
+        "description": "Devuelve los detalles de una factura específica identificada por su número de control.",
+        "parameters": [
+          {
+            "name": "numero_control",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "NC123456"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles de la factura"
+          },
+          "404": {
+            "description": "Factura no encontrada"
+          }
+        }
+      }
+    },
+    "/factura/empresa/{empresa_id}": {
+      "get": {
+        "tags": [
+          "factura"
+        ],
+        "summary": "Obtener facturas por ID de empresa",
+        "description": "Devuelve una lista de facturas asociadas a una empresa específica identificada por su ID.",
+        "parameters": [
+          {
+            "name": "empresa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 101
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de facturas"
+          },
+          "404": {
+            "description": "No se encontraron facturas para la empresa"
+          }
+        }
+      }
+    },
+    "/factura/cliente/{cliente_id}": {
+      "get": {
+        "tags": [
+          "factura"
+        ],
+        "summary": "Obtener facturas por ID de cliente",
+        "description": "Devuelve una lista de facturas asociadas a un cliente específico identificado por su ID.",
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de facturas"
+          },
+          "404": {
+            "description": "No se encontraron facturas para el cliente"
+          }
+        }
+      }
+    },
+    "/factura/{factura_id}/iva": {
+      "get": {
+        "tags": [
+          "factura"
+        ],
+        "summary": "Obtener IVA de una factura",
+        "description": "Devuelve el IVA asociado a una factura específica identificada por su ID.",
+        "parameters": [
+          {
+            "name": "factura_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "IVA de la factura"
+          },
+          "404": {
+            "description": "IVA no encontrado para la factura"
+          }
+        }
+      }
+    },
+    "/factura/{factura_id}/operaciones": {
+      "get": {
+        "tags": [
+          "factura"
+        ],
+        "summary": "Obtener operaciones de una factura",
+        "description": "Devuelve las operaciones asociadas a una factura específica identificada por su ID.",
+        "parameters": [
+          {
+            "name": "factura_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operaciones de la factura"
+          },
+          "404": {
+            "description": "Operaciones no encontradas para la factura"
+          }
+        }
+      }
+    },
+    "/factura/{factura_id}/detalles": {
+      "get": {
+        "tags": [
+          "factura"
+        ],
+        "summary": "Obtener detalles de una factura",
+        "description": "Devuelve los detalles asociados a una factura específica identificada por su ID.",
+        "parameters": [
+          {
+            "name": "factura_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles de la factura"
+          },
+          "404": {
+            "description": "Detalles de factura no encontrados"
+          }
+        }
+      }
+    },
+    "/factura/{factura_id}/pedido": {
+      "get": {
+        "tags": [
+          "factura"
+        ],
+        "summary": "Obtener pedido asociado a una factura",
+        "description": "Devuelve el pedido asociado a una factura específica identificada por su ID.",
+        "parameters": [
+          {
+            "name": "factura_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pedido asociado a la factura"
+          },
+          "404": {
+            "description": "Pedido no encontrado para la factura"
+          }
+        }
+      }
+    },
+    "/detalle_factura": {
+      "get": {
+        "tags": [
+          "DetalleFactura"
+        ],
+        "summary": "Obtener todos los detalles de factura",
+        "description": "Devuelve una lista de todos los detalles de factura registrados en el sistema.",
+        "responses": {
+          "200": {
+            "description": "Lista de detalles de factura obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "producto_id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "cantidad": {
+                        "type": "integer",
+                        "example": 2
+                      },
+                      "precio": {
+                        "type": "number",
+                        "example": 250.0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/detalle_factura/{detalle_factura_id}": {
+      "get": {
+        "tags": [
+          "DetalleFactura"
+        ],
+        "summary": "Obtener un detalle de factura por ID",
+        "description": "Devuelve los detalles de un detalle de factura específico identificado por su ID.",
+        "parameters": [
+          {
+            "name": "detalle_factura_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles del detalle de factura obtenidos exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "producto_id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "example": 2
+                    },
+                    "precio": {
+                      "type": "number",
+                      "example": 250.0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Detalle de factura no encontrado"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "DetalleFactura"
+        ],
+        "summary": "Actualizar un detalle de factura por ID",
+        "description": "Actualiza los detalles de un detalle de factura específico identificado por su ID.",
+        "parameters": [
+          {
+            "name": "detalle_factura_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "producto_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "cantidad": {
+                    "type": "integer",
+                    "example": 2
+                  },
+                  "precio": {
+                    "type": "number",
+                    "example": 250.0
+                  }
+                },
+                "required": [
+                  "producto_id",
+                  "cantidad",
+                  "precio"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Detalle de factura actualizado correctamente"
+          },
+          "404": {
+            "description": "Detalle de factura no encontrado"
+          }
+        }
+      }
+    },
+    "/detalle_factura/create": {
+      "post": {
+        "tags": [
+          "DetalleFactura"
+        ],
+        "summary": "Crear o recuperar un detalle de factura",
+        "description": "Crea un nuevo detalle de factura o recupera uno existente basado en los datos proporcionados.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "producto_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "cantidad": {
+                    "type": "integer",
+                    "example": 2
+                  },
+                  "precio": {
+                    "type": "number",
+                    "example": 250.0
+                  }
+                },
+                "required": [
+                  "producto_id",
+                  "cantidad",
+                  "precio"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Detalle de factura creado o recuperado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "producto_id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "example": 2
+                    },
+                    "precio": {
+                      "type": "number",
+                      "example": 250.0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

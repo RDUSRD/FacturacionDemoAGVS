@@ -8,16 +8,16 @@ from src.documento.documentoService import (
     get_documentos_by_empresa_id,
     get_documentos_by_cliente_id,
     get_or_create_factura,
-    get_or_create_nota_credito,
-    get_or_create_nota_debito,
-    get_or_create_orden_entrega,
+    # get_or_create_nota_credito,
+    # get_or_create_nota_debito,
+    # get_or_create_orden_entrega,
 )
 from src.documento.factura.facturaSchema import FacturaSchema
-from src.documento.orden_entrega.ordenEntregaSchema import OrdenEntregaSchema
-from src.documento.notas.notaSchema import (
-    NotaCreditoSchema,
-    NotaDebitoSchema,
-)
+# from src.documento.orden_entrega.ordenEntregaSchema import OrdenEntregaSchema
+# from src.documento.notas.notaSchema import (
+#     NotaCreditoSchema,
+#     NotaDebitoSchema,
+# )
 
 
 router = APIRouter(prefix="/documento", tags=["Documento"])

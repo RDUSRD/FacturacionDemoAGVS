@@ -6,6 +6,10 @@ from src.producto.productoService import (
     get_all_productos,
     get_or_create_producto,
     update_producto,
+    get_producto_by_codigo,
+    get_producto_by_codigo_barras,
+    get_producto_by_codigo_QR,
+    get_producto_exento,
 )
 from src.producto.productoSchema import ProductoSchema, ProductoUpdateSchema
 
@@ -26,7 +30,7 @@ def get_producto(producto_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/codigo/{codigo}")
-def get_producto_by_codigo(codigo: str, db: Session = Depends(get_db)):
+def get_producto_by_codigo_router(codigo: str, db: Session = Depends(get_db)):
     producto = get_producto_by_codigo(db, codigo)
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
@@ -34,7 +38,9 @@ def get_producto_by_codigo(codigo: str, db: Session = Depends(get_db)):
 
 
 @router.get("/codigo_barras/{codigo_barras}")
-def get_producto_by_codigo_barras(codigo_barras: str, db: Session = Depends(get_db)):
+def get_producto_by_codigo_barras_router(
+    codigo_barras: str, db: Session = Depends(get_db)
+):
     producto = get_producto_by_codigo_barras(db, codigo_barras)
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
@@ -42,7 +48,7 @@ def get_producto_by_codigo_barras(codigo_barras: str, db: Session = Depends(get_
 
 
 @router.get("/codigo_QR/{codigo_QR}")
-def get_producto_by_codigo_QR(codigo_QR: str, db: Session = Depends(get_db)):
+def get_producto_by_codigo_QR_router(codigo_QR: str, db: Session = Depends(get_db)):
     producto = get_producto_by_codigo_QR(db, codigo_QR)
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
@@ -50,7 +56,7 @@ def get_producto_by_codigo_QR(codigo_QR: str, db: Session = Depends(get_db)):
 
 
 @router.get("/exento")
-def get_producto_exento(db: Session = Depends(get_db)):
+def get_producto_exento_router(db: Session = Depends(get_db)):
     return get_producto_exento(db)
 
 
