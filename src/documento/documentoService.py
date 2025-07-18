@@ -210,6 +210,7 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
 
         # Convertir el pedido a factura
         convert_pedido(db, pedido.id)  # Convertir el pedido a factura
+        factura = db.query(Factura).filter(Factura.factura_id == factura.factura_id).first()
         return {"factura creada": factura, "pedido_id": pedido.id}
 
     except Exception as e:
