@@ -166,20 +166,26 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
         iva_monto = round(monto_base * Decimal("0.16"), 2)
         print(f"IVA calculado: {iva_monto}")
 
-        # Verificar si aplica el IGTF
-        monto_igtf = 0
-        if factura.aplica_igtf:
-            monto_igtf = round(monto_base * Decimal("0.03"), 2)
-            print(f"IGTF calculado: {monto_igtf}")
-            monto_dolares = (
-                round(monto_base / Decimal(precio_bcv), 2) if precio_bcv else 0
-            )
-
         # Calcular el total de la factura
         subtotal = monto_base - descuento_total + iva_monto + monto_exento
         if subtotal < 0:
             print("Error: Subtotal negativo. Activando rollback manual.")
             raise Exception("Subtotal negativo. Activando rollback manual.")
+
+        # Verificar si aplica el IGTF
+        monto_igtf = 0
+        if factura.aplica_igtf:
+            monto_base_total = monto_base + monto_exento
+            if monto_base_total > 0:
+                monto_igtf = round(monto_base_total * Decimal("0.03"), 2)
+                print(f"IGTF calculado: {monto_igtf}")
+                monto_dolares = (
+                    round(monto_base_total / Decimal(precio_bcv), 2)
+                    if precio_bcv
+                    else 0
+                )
+            else:
+                print("Advertencia: IGTF no calculado porque el monto base total es 0.")
 
         total_factura = subtotal + monto_igtf
         if total_factura < 0:
