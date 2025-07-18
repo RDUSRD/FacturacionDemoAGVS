@@ -220,7 +220,20 @@ def update_pedido(db: Session, pedido_id: int, pedido_data: PedidoUpdateSchema):
 
         db.commit()
         db.refresh(pedido)
-        return pedido
+
+        # convert pedido object to dictionary
+        pedido_dict = {
+            "id": pedido.id,
+            "cliente_id": pedido.cliente_id,
+            "empresa_id": pedido.empresa_id,
+            "estado": pedido.estado,
+            "fecha_creacion": pedido.fecha_creacion,
+            "fecha_actualizacion": pedido.fecha_actualizacion,
+            "fecha_vencimiento": pedido.fecha_vencimiento,
+            "total": float(pedido.total) if pedido.total else None,
+            "observaciones": pedido.observaciones,
+        }
+        return {"pedido actualizado": pedido_dict}
 
     except Exception as e:
         db.rollback()
