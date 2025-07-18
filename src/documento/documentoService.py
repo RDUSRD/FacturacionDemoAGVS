@@ -168,10 +168,16 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
             monto_igtf = round(monto_base * Decimal("0.03"), 2)
             print(f"IGTF calculado: {monto_igtf}")
             monto_dolares = round(monto_base / Decimal(precio_bcv), 2) if precio_bcv else 0
-
+        
         # Calcular el total de la factura
         subtotal = monto_base - descuento_total + iva_monto
+        if subtotal < 0:
+            raise ValueError(f"Error en el cálculo: el subtotal es negativo ({subtotal}). Verifique los datos de entrada.")
+        
         total_factura = subtotal + monto_igtf
+        if total_factura < 0:
+            raise ValueError(f"Error en el cálculo: el total de la factura es negativo ({total_factura}). Verifique los datos de entrada.")
+        
         print(f"Subtotal: {subtotal}, Total factura: {total_factura}")
 
         # Actualizar la factura con los cálculos
