@@ -97,7 +97,11 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
         if pedido.estado != "pendiente":
             print("Error: El pedido no está en un estado válido para facturación.")
             db.rollback()
-            return {"error": "El pedido ya fue convertido a factura.", "pedido_id": pedido.id, "estado": pedido.estado}
+            return {
+                "error": "El pedido ya fue convertido a factura.",
+                "pedido_id": pedido.id,
+                "estado": pedido.estado,
+            }
 
         # obtener el precio del BCV
         precio_bcv = obtener_dolar_bcv(db)
@@ -167,17 +171,21 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
         if factura.aplica_igtf:
             monto_igtf = round(monto_base * Decimal("0.03"), 2)
             print(f"IGTF calculado: {monto_igtf}")
-            monto_dolares = round(monto_base / Decimal(precio_bcv), 2) if precio_bcv else 0
-        
+            monto_dolares = (
+                round(monto_base / Decimal(precio_bcv), 2) if precio_bcv else 0
+            )
+
         # Calcular el total de la factura
-        subtotal = monto_base - descuento_total + iva_monto
+        subtotal = monto_base - descuento_total + iva_monto + monto_exento
         if subtotal < 0:
-            raise ValueError(f"Error en el cálculo: el subtotal es negativo ({subtotal}). Verifique los datos de entrada.")
-        
+            print("Error: Subtotal negativo. Activando rollback manual.")
+            raise Exception("Subtotal negativo. Activando rollback manual.")
+
         total_factura = subtotal + monto_igtf
         if total_factura < 0:
-            raise ValueError(f"Error en el cálculo: el total de la factura es negativo ({total_factura}). Verifique los datos de entrada.")
-        
+            print("Error: Total de factura negativo. Activando rollback manual.")
+            raise Exception("Total de factura negativo. Activando rollback manual.")
+
         print(f"Subtotal: {subtotal}, Total factura: {total_factura}")
 
         # Actualizar la factura con los cálculos
@@ -216,7 +224,9 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
 
         # Convertir el pedido a factura
         convert_pedido(db, pedido.id)  # Convertir el pedido a factura
-        factura = db.query(Factura).filter(Factura.factura_id == factura.factura_id).first()
+        factura = (
+            db.query(Factura).filter(Factura.factura_id == factura.factura_id).first()
+        )
         return {"factura creada": factura, "pedido_id": pedido.id}
 
     except Exception as e:
