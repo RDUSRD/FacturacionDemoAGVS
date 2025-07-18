@@ -210,7 +210,7 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
 
         # Convertir el pedido a factura
         convert_pedido(db, pedido.id)  # Convertir el pedido a factura
-        return factura
+        return {"factura creada": factura, "pedido_id": pedido.id}
 
     except Exception as e:
         print(f"Error al crear la factura: {str(e)}")
