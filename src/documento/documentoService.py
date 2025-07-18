@@ -97,7 +97,7 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
         if pedido.estado != "pendiente":
             print("Error: El pedido no está en un estado válido para facturación.")
             db.rollback()
-            return {"error": "El pedido no está en un estado válido para facturación."}
+            return {"error": "El pedido ya fue convertido a factura.", "pedido_id": pedido.id, "estado": pedido.estado}
 
         # obtener el precio del BCV
         precio_bcv = obtener_dolar_bcv(db)
