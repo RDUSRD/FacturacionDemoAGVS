@@ -16,7 +16,7 @@ Dependencias:
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from database import Base, engine
-from loggers.logger import app_logger
+from src.loggers.loggerService import app_logger
 from dotenv import load_dotenv
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from core import url
@@ -30,6 +30,7 @@ from src.documento.documentoRouter import router as documento_router
 from src.pedidos.pedidoRouter import router as pedido_router
 from src.documento.factura.facturaRouter import router as factura_router
 from src.monedas.monedaRouter import router as moneda_router
+from src.loggers.loggerRouter import router as logger_router
 
 # from src.documento.notas.notaRouter import router as nota_router
 # from src.documento.orden_entrega.ordenEntregaRouter import (
@@ -47,6 +48,7 @@ from src.documento.factura.detalleFactura.detalleFacturaRouter import (
 from src.auth.auth_routes import router as auth_router
 from src.utils.custom_handlers import authentik_swagger_protection, custom_404_handler
 from src.utils.cron.updateDolar import iniciar_cron_job, detener_cron_job
+from src.auth.group_middleware import GroupMembershipMiddleware
 
 # Cargar variables de entorno
 load_dotenv()
@@ -141,6 +143,7 @@ app.include_router(factura_router)
 app.include_router(detalle_factura_router)
 app.include_router(moneda_router)
 # app.include_router(auditoria_router)
+app.include_router(logger_router)
 app.include_router(auth_router)
 
 # Registrar un log al iniciar la aplicación
@@ -156,3 +159,6 @@ app.middleware("http")(authentik_swagger_protection)
 app.add_middleware(
     SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY", "default_secret_key")
 )
+
+# Agrgar el middleware de grupo de membresía
+# app.add_middleware(GroupMembershipMiddleware)

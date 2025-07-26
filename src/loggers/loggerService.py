@@ -24,6 +24,11 @@ from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from fastapi import Request
+
+from src.auth.jwt_middleware import decode_access_token_with_jwks
+
+
 # Cambiar la zona horaria a UTC
 TIMEZONE = "UTC"
 
@@ -39,7 +44,9 @@ class CustomFormatter(logging.Formatter):
     Se espera que cada registro tenga los campos 'device', 'user', 'ip' y 'custom_func'.
     """
 
-    HEADER_LOGGED = False  # Variable de clase para controlar si el encabezado ya se registró
+    HEADER_LOGGED = (
+        False  # Variable de clase para controlar si el encabezado ya se registró
+    )
 
     def __init__(self, fmt=None, datefmt=None):
         super().__init__(fmt, datefmt)
@@ -48,6 +55,7 @@ class CustomFormatter(logging.Formatter):
 
     def formatTime(self, record, datefmt=None):
         from datetime import datetime
+
         ct = datetime.fromtimestamp(record.created, ZoneInfo(TIMEZONE))
         if datefmt:
             s = ct.strftime(datefmt)
@@ -77,9 +85,15 @@ class CustomFormatter(logging.Formatter):
         # Agregar encabezado si no se ha registrado
         if not CustomFormatter.HEADER_LOGGED:
             header = "Time                    | Level    | Device         | User           | IP             | Func           | Message"
-            separator = "-" * len(header)
-            with open(LOG_DIR + f"/{datetime.now(ZoneInfo(TIMEZONE)).strftime('%Y-%m-%d')}.log", "a") as log_file:
-                log_file.write(f"{header}\n{separator}\n")
+            separator = "=" * len(
+                header
+            )  # Cambiar el separador a '=' para mayor claridad
+            with open(
+                LOG_DIR
+                + f"/{datetime.now(ZoneInfo(TIMEZONE)).strftime('%Y-%m-%d')}.log",
+                "a",
+            ) as log_file:
+                log_file.write(f"{separator}\n{header}\n{separator}\n")
             CustomFormatter.HEADER_LOGGED = True
 
         # Formatear el registro como una fila de tabla sin sobrescribir record.msg
@@ -98,6 +112,8 @@ def get_logger(logger_name: str):
     log_file = os.path.join(LOG_DIR, f"{date_str}.log")
 
     logger = logging.getLogger(logger_name)
+
+    # Forzar el nivel de logging del logger específico
     logger.setLevel(logging.DEBUG)
 
     format_str = "%(message)s"  # El mensaje ya incluye el formato de tabla
@@ -110,10 +126,77 @@ def get_logger(logger_name: str):
     if not logger.handlers:
         logger.addHandler(handler)
 
+        # Agregar un handler de consola para depuración
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.DEBUG)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+
     # Deshabilitar el log en la terminal
-    logger.propagate = False
+    logger.propagate = True
 
     return logger
+
+
+def get_request_info(request: Request):
+    """
+    Extrae información del dispositivo y la IP desde la solicitud.
+
+    Args:
+        request (Request): La solicitud HTTP entrante.
+
+    Returns:
+        dict: Un diccionario con la información del dispositivo y la IP.
+    """
+    ip = request.headers.get("X-Forwarded-For", request.client.host)
+    device = request.headers.get("User-Agent", "UnknownDevice")
+
+    try:
+        token = request.cookies.get("token", "")
+        if token:
+            token_body = decode_access_token_with_jwks(token)
+            user = (
+                token_body.get("nickname", "UnknownUser") if token_body else "UnknownUser"
+            )
+        else:
+            user = "UnknownUser"
+    except Exception as e:
+        user = "UnknownUser"
+
+    return {"device": device, "user": user, "ip": ip}
+
+
+def convert_logs_to_json(log_file_path: str):
+    """
+    Convierte un archivo de logs en formato TXT a JSON.
+
+    Args:
+        log_file_path (str): Ruta del archivo de logs.
+
+    Returns:
+        list: Una lista de diccionarios con los logs en formato JSON.
+    """
+    logs = []
+    with open(log_file_path, "r") as file:
+        for line in file:
+            # Ignorar encabezados o separadores
+            if line.startswith("Time") or line.startswith("=") or line.startswith("-"):
+                continue
+
+            # Dividir la línea en columnas
+            parts = line.strip().split(" | ")
+            if len(parts) == 7:  # Asegurarse de que tenga todas las columnas
+                log_entry = {
+                    "time": parts[0].strip(),
+                    "level": parts[1].strip(),
+                    "device": parts[2].strip(),
+                    "user": parts[3].strip(),
+                    "ip": parts[4].strip(),
+                    "func": parts[5].strip(),
+                    "message": parts[6].strip(),
+                }
+                logs.append(log_entry)
+    return logs
 
 
 # Configuración global del logger
