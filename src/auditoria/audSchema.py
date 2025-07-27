@@ -11,4 +11,4 @@ class AuditoriaSchema(BaseModel):
     usuario: str = Field(..., description="Debe especificar el usuario que realizó la acción")
 
     class Config:
-        orm_mode = True
+        from_attributes = True

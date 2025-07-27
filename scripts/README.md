@@ -24,8 +24,8 @@ Este script automatiza la configuración de PostgreSQL, la creación de una base
      DB_PASSWORD=tu_contraseña
      ```
 
-4. **Archivo `create_schema.sql`**:
-   - Asegúrate de que el archivo `create_schema.sql` esté en el mismo directorio que el script `deploy_database.sh`.
+4. **Archivos SQL**:
+   - Asegúrate de que los archivos `create_schema.sql` y `auditoria_triggers.sql` estén en el mismo directorio que el script `deploy_database.sh`.
 
 ---
 
@@ -38,7 +38,7 @@ Este script automatiza la configuración de PostgreSQL, la creación de una base
      ```
 
 2. **Ejecutar el Script**:
-   - Ejecuta el script para configurar PostgreSQL, crear la base de datos y ejecutar el esquema SQL:
+   - Ejecuta el script para configurar PostgreSQL, crear la base de datos y ejecutar los esquemas SQL:
      ```bash
      ./deploy_database.sh
      ```
@@ -48,6 +48,7 @@ Este script automatiza la configuración de PostgreSQL, la creación de una base
    - Configurará la contraseña del usuario `postgres`.
    - Creará la base de datos especificada en el archivo `.env`.
    - Ejecutará el archivo `create_schema.sql` para crear las tablas necesarias.
+   - Ejecutará el archivo `auditoria_triggers.sql` para configurar los triggers de auditoría.
 
 ---
 
@@ -82,7 +83,13 @@ Este script automatiza la configuración de PostgreSQL, la creación de una base
      \d empresa
      ```
 
-5. **Salir de la Consola de PostgreSQL**:
+5. **Verifica los Triggers Configurados**:
+   - Lista los triggers configurados en una tabla, por ejemplo, `empresa`:
+     ```sql
+     \d+ empresa
+     ```
+
+6. **Salir de la Consola de PostgreSQL**:
    - Usa el comando:
      ```sql
      \q

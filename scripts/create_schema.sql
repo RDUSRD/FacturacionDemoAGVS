@@ -53,7 +53,13 @@ CREATE TABLE IF NOT EXISTS producto (
     id SERIAL PRIMARY KEY,
     codigo VARCHAR(50) NOT NULL UNIQUE,
     descripcion TEXT NOT NULL,
-    precio DECIMAL(10, 2) NOT NULL
+    precio DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'activo',
+    stock INT NOT NULL DEFAULT 0,
+    codigo_barras VARCHAR(100) UNIQUE,
+    codigo_QR VARCHAR(100) UNIQUE,
+    exento BOOLEAN DEFAULT FALSE,
+    descuento DECIMAL(10, 2) DEFAULT 0.0
 );
 
 -- Crear tabla DETALLE_FACTURA
@@ -113,4 +119,36 @@ CREATE TABLE IF NOT EXISTS auditoria (
     detalles TEXT,
     fecha_hora TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     usuario VARCHAR(255) NOT NULL
+);
+
+-- Crear tabla PEDIDO
+CREATE TABLE IF NOT EXISTS pedido (
+    id SERIAL PRIMARY KEY,
+    cliente_id INT NOT NULL REFERENCES cliente(id) ON DELETE CASCADE,
+    empresa_id INT NOT NULL REFERENCES empresa(id) ON DELETE CASCADE,
+    estado VARCHAR(50) DEFAULT 'Pendiente',
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_vencimiento TIMESTAMP DEFAULT CURRENT_TIMESTAMP + INTERVAL '2 hours',
+    total DECIMAL(10, 2),
+    observaciones VARCHAR(255)
+);
+
+-- Crear tabla DETALLE_PEDIDO
+CREATE TABLE IF NOT EXISTS detalle_pedido (
+    id SERIAL PRIMARY KEY,
+    pedido_id INT NOT NULL REFERENCES pedido(id) ON DELETE CASCADE,
+    producto_id INT NOT NULL REFERENCES producto(id) ON DELETE CASCADE,
+    cantidad INT NOT NULL,
+    precio_unitario DECIMAL(10, 2) NOT NULL,
+    descuento DECIMAL(10, 2) DEFAULT 0.0,
+    total DECIMAL(10, 2) NOT NULL
+);
+
+-- Crear tabla DOLAR
+CREATE TABLE IF NOT EXISTS dolar (
+    id SERIAL PRIMARY KEY,
+    fecha DATE DEFAULT CURRENT_DATE NOT NULL,
+    precio FLOAT NOT NULL,
+    fecha_actualizacion TIMESTAMP NOT NULL
 );

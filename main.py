@@ -16,7 +16,6 @@ Dependencias:
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from database import Base, engine
-from src.loggers.loggerService import app_logger
 from dotenv import load_dotenv
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from core import url
@@ -44,10 +43,11 @@ from src.documento.factura.detalleFactura.detalleFacturaRouter import (
     router as detalle_factura_router,
 )
 
-# from src.auditoria.audRouter import router as auditoria_router
+from src.auditoria.audRouter import router as auditoria_router
 from src.auth.auth_routes import router as auth_router
 from src.utils.custom_handlers import authentik_swagger_protection, custom_404_handler
 from src.utils.cron.updateDolar import iniciar_cron_job, detener_cron_job
+from src.auditoria import auditoria_triggers # Importar triggers de auditoría
 from src.auth.group_middleware import GroupMembershipMiddleware
 
 # Cargar variables de entorno
@@ -106,14 +106,12 @@ async def lifespan_with_reset_and_cron(app: FastAPI):
 
 
 # Configurar la aplicación FastAPI
-USE_RESET = (
-    False  # Cambiar a True para reiniciar la base de datos al iniciar la aplicación
-)
+USE_RESET = os.getenv("RESET_DB", "False").lower() == "true"
 
 app = FastAPI(
     description="API para la gestión de documentos y facturación",
     title="API Facturacion AGV Services",
-    version="1.0.0",
+    version="0.4.10",
     lifespan=lifespan_with_reset_and_cron if USE_RESET else lifespan_with_cron,
 )
 
@@ -138,7 +136,7 @@ app.include_router(factura_router)
 # app.include_router(comprobante_retencion_router)
 app.include_router(detalle_factura_router)
 app.include_router(moneda_router)
-# app.include_router(auditoria_router)
+app.include_router(auditoria_router)
 app.include_router(logger_router)
 app.include_router(auth_router)
 

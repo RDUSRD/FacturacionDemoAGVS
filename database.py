@@ -13,6 +13,7 @@ Environment Variables:
 
 Functions:
 - get_db: Yields a database session for use in FastAPI routes.
+- load_triggers: Loads triggers from an SQL file.
 """
 
 import time
@@ -45,6 +46,7 @@ else:
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
 
 def get_db():
     db = SessionLocal()

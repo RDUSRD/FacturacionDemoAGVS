@@ -128,7 +128,7 @@ def get_logger(logger_name: str):
 
         # Agregar un handler de consola para depuración
         console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.DEBUG)
+        console_handler.setLevel(logging.WARNING)  # Cambiar a WARNING para evitar INFO en consola
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 

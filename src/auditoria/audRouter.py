@@ -1,10 +1,29 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from database import get_db
-from src.auditoria.audService import log_auditoria
+from src.auditoria.audService import (
+    get_auditoria_by_id,
+    get_all_auditorias,
+)
+from src.loggers.loggerService import get_logger, get_request_info
+
+logger = get_logger("AuditoriaRouter")
 
 router = APIRouter(tags=["Auditoria"], prefix="/auditoria")
 
-@router.post("/log", response_model=dict)
-def log_auditoria_endpoint(auditoria_data: dict, db: Session = Depends(get_db)):
-    return log_auditoria(db, auditoria_data)
+@router.get("/{auditoria_id}", response_model=dict)
+def get_auditoria_endpoint(auditoria_id: int, request: Request, db: Session = Depends(get_db)):
+    request_info = get_request_info(request)
+    logger.info(f"Obteniendo auditoría con ID: {auditoria_id}", extra=request_info)
+    return get_auditoria_by_id(db, auditoria_id)
+
+@router.get("/", response_model=list)
+def get_auditorias_endpoint(
+    request: Request,
+    db: Session = Depends(get_db),
+    limit: int = Query(100, ge=1),
+    page: int = Query(1, ge=1)
+):
+    request_info = get_request_info(request)
+    logger.info(f"Obteniendo auditorías con límite: {limit} y página: {page}", extra=request_info)
+    return get_all_auditorias(db, limit=limit, page=page)

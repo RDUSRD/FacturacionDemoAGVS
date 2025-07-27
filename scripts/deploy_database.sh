@@ -126,6 +126,16 @@ function execute_sql_script() {
     echo "El script SQL se ejecutó correctamente."
 }
 
+# Ejecutar el script de triggers de auditoría
+function execute_auditoria_triggers() {
+    local TRIGGERS_SCRIPT="auditoria_triggers.sql"
+    echo "Ejecutando el script de triggers de auditoría '$TRIGGERS_SCRIPT'..."
+    if ! PGPASSWORD="$DB_PASSWORD" psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -d "$DB_NAME" -f "$TRIGGERS_SCRIPT"; then
+        handle_error "Error al ejecutar el script de triggers de auditoría. Por favor, revisa el archivo '$TRIGGERS_SCRIPT'."
+    fi
+    echo "El script de triggers de auditoría se ejecutó correctamente."
+}
+
 # -------------------------------
 # EJECUCIÓN DEL SCRIPT
 # -------------------------------
@@ -139,5 +149,6 @@ configure_postgres_password
 create_database
 create_app_user
 execute_sql_script
+execute_auditoria_triggers
 
 echo "Deployment completado exitosamente."

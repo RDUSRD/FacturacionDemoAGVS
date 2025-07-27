@@ -7,10 +7,15 @@ The Facturación System is a FastAPI-based application designed to manage invoic
 - **Authentication**: OAuth2 integration with Authentik.
 - **Document Management**: Create and manage invoices, debit notes, credit notes, delivery orders, and retention receipts.
 - **PDF Generation**: Generate PDF documents using WeasyPrint.
-- **Audit Logging**: Log all transactions for auditing purposes.
+- **Audit Logging**: Log all transactions for auditing purposes, now with enhanced serialization support.
 - **Frontend Integration**: Serve HTML templates for user interaction.
-- **Middleware for Group Validation**: Protect routes based on user groups.
+- **Middleware for Group Validation**: Protect routes based on user groups, with fallback for unprotected routes.
 - **Advanced Logging**: Custom logger with rotating file handlers and detailed request information.
+
+## Recent Updates
+- Added a `to_dict` method to the `Auditoria` model for seamless serialization.
+- Adjusted service functions to return serialized data compatible with Pydantic.
+- Enhanced middleware to allow unprotected routes to proceed without validation.
 
 ## Dependencies
 The project requires the following Python packages:
