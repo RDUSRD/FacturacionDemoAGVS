@@ -138,12 +138,13 @@ def get_logger(logger_name: str):
     return logger
 
 
-def get_request_info(request: Request):
+def get_request_info(request: Request, token: str = None):
     """
     Extrae información del dispositivo y la IP desde la solicitud.
 
     Args:
         request (Request): La solicitud HTTP entrante.
+        token (str, optional): El token JWT para decodificar. Si no se proporciona, se usa el token de las cookies.
 
     Returns:
         dict: Un diccionario con la información del dispositivo y la IP.
@@ -152,15 +153,20 @@ def get_request_info(request: Request):
     device = request.headers.get("User-Agent", "UnknownDevice")
 
     try:
-        token = request.cookies.get("token", "")
+        if not token:
+            token = request.headers.get("Authorization", "").replace("Bearer ", "")
+            if not token:
+                token = request.cookies.get("token", "")
         if token:
             token_body = decode_access_token_with_jwks(token)
             user = (
-                token_body.get("nickname", "UnknownUser") if token_body else "UnknownUser"
+                token_body.get("nickname", "UnknownUser")
+                if token_body
+                else "UnknownUser"
             )
         else:
             user = "UnknownUser"
-    except Exception as e:
+    except Exception:
         user = "UnknownUser"
 
     return {"device": device, "user": user, "ip": ip}

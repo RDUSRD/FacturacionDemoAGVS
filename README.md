@@ -9,6 +9,8 @@ The Facturación System is a FastAPI-based application designed to manage invoic
 - **PDF Generation**: Generate PDF documents using WeasyPrint.
 - **Audit Logging**: Log all transactions for auditing purposes.
 - **Frontend Integration**: Serve HTML templates for user interaction.
+- **Middleware for Group Validation**: Protect routes based on user groups.
+- **Advanced Logging**: Custom logger with rotating file handlers and detailed request information.
 
 ## Dependencies
 The project requires the following Python packages:
@@ -24,6 +26,10 @@ The project requires the following Python packages:
 - `httpx`
 - `itsdangerous`
 - `watchgod`
+- `starlette`
+- `requests`
+- `apscheduler`
+- `python-jose`
 
 ## Environment Variables
 The application uses the following environment variables:
@@ -34,6 +40,23 @@ The application uses the following environment variables:
 - `AUTHENTIK_REDIRECT_URI`: Redirect URI for OAuth.
 - `AUTHENTIK_JWKS_URL`: JWKS URL for Authentik.
 - `SESSION_SECRET_KEY`: Secret key for session management.
+
+## Logger Configuration
+- Logs are stored in the `logs/` directory.
+- Log files rotate automatically when they reach 10 MB, keeping up to 5 backups.
+- Each log entry includes detailed information such as user, IP, and device.
+
+## Project Structure
+- `core.py`: Initializes OAuth client and templates.
+- `database.py`: Sets up the database connection and session management.
+- `models.py`: Defines the database models.
+- `schemas.py`: Defines Pydantic schemas for request validation and response serialization.
+- `services.py`: Contains business logic for document management.
+- `routers/`: Contains API route definitions.
+- `loggers/`: Configures custom logging and routes for log management.
+- `auth/`: Handles authentication and group-based route protection.
+- `templates/`: HTML templates for the frontend.
+- `static/`: Static files (CSS, JS).
 
 ## Running the Project Without Docker
 To run the project without Docker, follow these steps:
@@ -110,14 +133,3 @@ To run the project using Docker, follow these steps:
    ```bash
    docker-compose down
    ```
-
-## Project Structure
-- `core.py`: Initializes OAuth client and templates.
-- `database.py`: Sets up the database connection and session management.
-- `models.py`: Defines the database models.
-- `schemas.py`: Defines Pydantic schemas for request validation and response serialization.
-- `services.py`: Contains business logic for document management.
-- `routers/`: Contains API route definitions.
-- `loggers/`: Configures custom logging.
-- `templates/`: HTML templates for the frontend.
-- `static/`: Static files (CSS, JS).

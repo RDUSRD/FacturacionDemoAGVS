@@ -1,16 +1,16 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 import os
-from src.loggers.loggerService import convert_logs_to_json
+from src.loggers.loggerService import convert_logs_to_json, get_logger, get_request_info
 from datetime import datetime
 
+logger = get_logger("LoggerRouter")
 router = APIRouter(prefix="/logger", tags=["Logger"])
 
 
 @router.get("/logs/today")
-def get_logs_today():
-    """
-    Endpoint para obtener los logs del día actual.
-    """
+def get_logs_today(request: Request):
+    request_info = get_request_info(request)
+    logger.info("Obteniendo logs del día actual", extra=request_info)
     today_date = datetime.now().strftime("%Y-%m-%d")
     log_file_path = f"logs/{today_date}.log"
 
@@ -22,16 +22,9 @@ def get_logs_today():
 
 
 @router.get("/logs/{date}")
-def get_logs_by_date(date: str):
-    """
-    Endpoint para obtener los logs de una fecha específica.
-
-    Args:
-        date (str): Fecha en formato YYYY-MM-DD.
-
-    Returns:
-        list: Lista de logs en formato JSON o un mensaje de error si no se encuentra el archivo.
-    """
+def get_logs_by_date(date: str, request: Request):
+    request_info = get_request_info(request)
+    logger.info(f"Obteniendo logs para la fecha: {date}", extra=request_info)
     try:
         datetime.strptime(date, "%Y-%m-%d")  # Validar el formato de la fecha
     except ValueError:

@@ -72,13 +72,11 @@ async def lifespan_with_cron(app: FastAPI):
     """
     # Iniciar el cron job al inicio de la aplicación
     iniciar_cron_job()
-    app_logger.info("Cron job para actualizar el dólar iniciado.")
 
     yield
 
     # Detener el cron job al apagar la aplicación
     detener_cron_job()
-    app_logger.info("Aplicación FastAPI apagada correctamente.")
 
 
 async def lifespan_with_reset_and_cron(app: FastAPI):
@@ -100,13 +98,11 @@ async def lifespan_with_reset_and_cron(app: FastAPI):
 
     # Iniciar el cron job al inicio de la aplicación
     iniciar_cron_job()
-    app_logger.info("Cron job para actualizar el dólar iniciado.")
 
     yield
 
     # Detener el cron job al apagar la aplicación
     detener_cron_job()
-    app_logger.info("Aplicación FastAPI apagada correctamente.")
 
 
 # Configurar la aplicación FastAPI
@@ -146,9 +142,6 @@ app.include_router(moneda_router)
 app.include_router(logger_router)
 app.include_router(auth_router)
 
-# Registrar un log al iniciar la aplicación
-app_logger.info("Aplicación FastAPI iniciada correctamente")
-
 # Registrar el exception handler
 app.exception_handler(404)(custom_404_handler)
 
@@ -161,4 +154,4 @@ app.add_middleware(
 )
 
 # Agrgar el middleware de grupo de membresía
-# app.add_middleware(GroupMembershipMiddleware)
+app.add_middleware(GroupMembershipMiddleware)

@@ -21,17 +21,13 @@ Environment Variables:
 """
 
 from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.security import OAuth2AuthorizationCodeBearer
 import os
 import secrets
-import asyncio
 from core import url, oauth
 from src.loggers.loggerService import get_logger, get_request_info
-from src.auth.auth_service import (
-    get_access_token,
-)
 from src.auth.jwt_middleware import decode_access_token_with_jwks
 
 # Crear una instancia del logger para el módulo de autenticación
@@ -66,8 +62,6 @@ async def oauth_authorize(request: Request):
     redirect_uri = os.getenv("AUTHENTIK_REDIRECT_URI")
     state = secrets.token_urlsafe(16)
     request.session["oauth_state"] = state
-
-    logger.info("Inicio del flujo de autorización OAuth2", extra=get_request_info(request))
     return oauth.authentik.authorize_redirect(request, redirect_uri, state=state)
 
 
@@ -93,24 +87,27 @@ async def oauth_callback(request: Request):
 
     response = RedirectResponse(url="/docs")
     response.delete_cookie("oauth_state")
-    print(
-        f"State eliminado de la cookie: {expected_state}"
-    )  # Reemplazo de log con print
 
     try:
-        print("Iniciando el flujo de autorización OAuth2...")
+
         token_data = await oauth.authentik.authorize_access_token(request)
-        print(f"Tipo de token_data: {type(token_data)}")
 
         access_token = token_data.get("access_token")
 
         if not access_token:
             raise ValueError("No se recibió el access token")
 
-        response.set_cookie(key="token", value=access_token, httponly=True)
+        response.set_cookie(
+            key="token", value=access_token, httponly=True, path="/", secure=False
+        )
+        if not response.headers.get("set-cookie"):
+            raise HTTPException(
+                status_code=500, detail="No se pudo establecer la cookie del token"
+            )
+
         logger.info(
             "Access token recibido y almacenado en cookie",
-            extra=get_request_info(request),
+            extra=get_request_info(request, token=access_token),
         )
     except Exception as e:
         logger.error(
@@ -175,9 +172,17 @@ def protected_swagger_ui(
 # Ruta para poder obtener el token de acceso desde el frontend
 @router.get("/get-token", include_in_schema=True)
 async def get_token(request: Request):
-    return get_access_token(request)
+    token = request.cookies.get("token")
+    if not token:
+        raise HTTPException(
+            status_code=401, detail="No se encontró el token de acceso."
+        )
+
+    logger.info("Token de acceso obtenido", extra=get_request_info(request))
+    return JSONResponse(content={"access_token": token})
 
 
 @router.get("/decode-token", include_in_schema=True)
-async def decode_token(token: str):
+async def decode_token(request: Request, token: str):
+    logger.info("Decodificando token JWT", extra=get_request_info(request, token=token))
     return decode_access_token_with_jwks(token)

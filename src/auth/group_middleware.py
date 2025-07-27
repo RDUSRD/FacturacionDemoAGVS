@@ -20,44 +20,54 @@ class GroupMembershipMiddleware(BaseHTTPMiddleware):
     # Define a mapping of routes and methods to required groups
     route_group_mapping = {
         # Rutas para el módulo empresa
-        ("/empresa", "GET"): "authentik Admins",
-        ("/empresa/{empresa_id}", "GET"): "authentik Admins",
-        ("/empresa/create", "POST"): "authentik Admins",
-        ("/empresa/{empresa_id}", "PUT"): "authentik Admins",
+        ("/empresa", "ALL"): ["authentik Admins"],
         # Rutas para el módulo clientes
-        ("/clientes", "GET"): "authentik Users",
-        ("/clientes/{cliente_id}", "GET"): "authentik Users",
-        ("/clientes/create", "POST"): "authentik Users",
-        ("/clientes/{cliente_id}", "PUT"): "authentik Users",
+        ("/cliente", "ALL"): ["authentik Admins"],
         # Rutas para el módulo productos
-        ("/productos", "GET"): "authentik Managers",
-        ("/productos/{producto_id}", "GET"): "authentik Managers",
-        ("/productos/create", "POST"): "authentik Managers",
-        ("/productos/{producto_id}", "PUT"): "authentik Managers",
+        ("/producto", "ALL"): ["authentik Admins"],
+        # Rutas para el módulo pedidos
+        ("/pedido", "ALL"): ["authentik Admins"],
+        # Rutas para el módulo documentos
+        ("/documento", "ALL"): ["authentik Admins"],
+        # Rutas para el módulo facturas
+        ("/factura", "ALL"): ["authentik Admins"],
+        # Rutas para el módulo detalle de facturas
+        ("/detalle_factura", "ALL"): ["authentik Admins"],
+        # Rutas para el módulo monedas
+        ("/moneda", "ALL"): ["authentik Admins"],
+        # Rutas para el módulo loggers
+        ("/logger", "ALL"): ["authentik Admins"],
+        # Rutas para el módulo autenticación
+        ("/auth", "ALL"): ["authentik Admins"],
     }
 
     # Define excluded routes
     excluded_routes = [
         "/docs",
         "/openapi.json",
-        "/oauth",  # Excluir todas las rutas que comiencen con /oauth
-        "/auth/get-token",
-        "/auth/decode-token",
+        "/oauth",
+        "/get-token",
     ]
 
     async def dispatch(self, request: Request, call_next):
         try:
             # Log para depuración de rutas excluidas
-            print(f"Ruta solicitada: {request.scope['path']}")
-            if any(request.scope["path"].startswith(prefix) for prefix in self.excluded_routes):
-                print(f"Ruta {request.scope['path']} excluida del middleware.")
+            if any(
+                request.scope["path"].startswith(prefix)
+                for prefix in self.excluded_routes
+            ):
                 try:
                     return await call_next(request)
                 except Exception as e:
-                    logger.error(f"Error en call_next durante la exclusión: {str(e)}", exc_info=True)
+                    logger.error(
+                        f"Error en call_next durante la exclusión: {str(e)}",
+                        exc_info=True,
+                    )
                     return JSONResponse(
                         status_code=500,
-                        content={"detail": "Error interno del servidor durante la exclusión."},
+                        content={
+                            "detail": "Error interno del servidor durante la exclusión."
+                        },
                     )
 
             authorization: str = request.headers.get("Authorization", "")
@@ -68,26 +78,40 @@ class GroupMembershipMiddleware(BaseHTTPMiddleware):
                 )
 
             token = authorization.split(" ")[1]
-            print(f"Token: {token}")  # Debugging line to print the token
             decoded_token = decode_access_token_with_jwks(token)
-            print(f"Decoded Token: {decoded_token}")
-            if "error" in decoded_token:
+            if not decoded_token:
+                logger.error(
+                    "El token no pudo ser decodificado o es inválido.",
+                    extra=get_request_info(request),
+                )
                 return JSONResponse(
                     status_code=401,
                     content={"detail": "Token inválido o expirado."},
                 )
 
-            payload = decoded_token.get("payload", {})
+            payload = decoded_token
             groups = payload.get("groups", [])
 
             # Determine the required group for the current route and method
             route = request.url.path
             method = request.method
-            required_group = self.route_group_mapping.get((route, method))
 
-            if required_group and required_group not in groups:
+            # Buscar coincidencias exactas, rutas con parámetros dinámicos o prefijos generales
+            required_group = self.route_group_mapping.get((route, method))
+            if not required_group:
+                for (pattern, m), group in self.route_group_mapping.items():
+                    if (
+                        (m == method or m == "ALL")
+                        and (pattern.endswith("}") and route.startswith(pattern.rsplit("/", 1)[0])
+                             or route.startswith(pattern))
+                    ):
+                        required_group = group
+                        break
+
+            # Verificar si el usuario pertenece a cualquiera de los grupos permitidos
+            if required_group and not any(group in groups for group in required_group):
                 logger.warning(
-                    f"Usuario {payload.get('nickname', 'UnknownUser')} no tiene acceso a este recurso.",
+                    f"Usuario {payload.get('nickname', 'UnknownUser')} no tiene acceso a este recurso {route}.",
                     extra=get_request_info(request),
                 )
                 return JSONResponse(
