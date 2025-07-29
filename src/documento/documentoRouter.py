@@ -8,8 +8,11 @@ from src.documento.documentoService import (
     get_documentos_by_empresa_id,
     get_documentos_by_cliente_id,
     get_or_create_factura,
+    get_or_create_nota_credito,
+    get_or_create_nota_debito,
 )
 from src.documento.factura.facturaSchema import FacturaSchema
+from src.documento.notas.notaSchema import NotaCreditoSchema, NotaDebitoSchema
 from src.loggers.loggerService import get_logger, get_request_info
 
 logger = get_logger("DocumentoRouter")
@@ -81,3 +84,19 @@ def create_factura_endpoint(factura_data: FacturaSchema, request: Request, db: S
     request_info = get_request_info(request)
     logger.info("Creando o obteniendo factura", extra=request_info)
     return get_or_create_factura(db, factura_data)
+
+
+# Ruta para crear una nota de crédito
+@router.post("/create/nota-credito")
+def create_nota_credito_endpoint(nota_credito_data: NotaCreditoSchema, request: Request, db: Session = Depends(get_db)):
+    request_info = get_request_info(request)
+    logger.info("Creando o obteniendo nota de crédito", extra=request_info)
+    return get_or_create_nota_credito(db, nota_credito_data)
+
+
+# Ruta para crear una nota de débito
+@router.post("/create/nota-debito")
+def create_nota_debito_endpoint(nota_debito_data: NotaDebitoSchema, request: Request, db: Session = Depends(get_db)):
+    request_info = get_request_info(request)
+    logger.info("Creando o obteniendo nota de débito", extra=request_info)
+    return get_or_create_nota_debito(db, nota_debito_data)

@@ -16,6 +16,7 @@ from src.documento.notas.notaModel import NotaCredito, NotaDebito
 from src.documento.factura.iva.ivaModel import iva
 from src.documento.factura.operacion.operacionModel import Operacion
 from src.documento.factura.detalleFactura.detalleFacturaModel import DetalleFactura
+from src.documento.factura.facturaService import create_operacion
 from src.pedidos.pedidoModel import Pedido  # Importar el modelo Pedido
 from src.pedidos.pedidoService import convert_pedido
 from src.monedas.dolar.dolarService import obtener_dolar_bcv
@@ -257,12 +258,42 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
 
 def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
     try:
+        print("Iniciando creación de nota de crédito...")
+
+        # Validar que la factura asociada existe
         factura = (
             db.query(Factura).filter(Factura.id == documento_data.factura_id).first()
         )
         if not factura:
+            print("Error: La factura asociada no existe.")
+            db.rollback()
             return {"error": "La factura asociada no existe."}
 
+        # Validar que los detalles de la factura existen
+        detalles_factura = (
+            db.query(DetalleFactura)
+            .filter(DetalleFactura.factura_id == factura.factura_id)
+            .all()
+        )
+        if not detalles_factura:
+            print("Error: No se encontraron detalles para la factura.")
+            db.rollback()
+            return {"error": "No se encontraron detalles para la factura."}
+
+        # Validar que las modificaciones son válidas
+        for mod_detalle in documento_data.modificaciones_detalles:
+            if not any(
+                d.producto_id == mod_detalle["id_producto"] for d in detalles_factura
+            ):
+                print(
+                    f"Error: Producto con ID {mod_detalle['id_producto']} no encontrado en los detalles de la factura."
+                )
+                db.rollback()
+                return {
+                    "error": f"Producto con ID {mod_detalle['id_producto']} no encontrado en los detalles de la factura."
+                }
+
+        # Crear la nota de crédito
         nota_credito = NotaCredito(
             tipo_documento="NotaCredito",
             numero_control=documento_data.numero_control,
@@ -271,26 +302,68 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
             descripcion=documento_data.descripcion,
             fecha_emision=datetime.today().date(),
             hora_emision=datetime.now().time(),
+            modificaciones_documento=documento_data.modificaciones_documento,
+            modificaciones_detalles=documento_data.modificaciones_detalles,
         )
-
         db.add(nota_credito)
         db.commit()
         db.refresh(nota_credito)
 
-        return nota_credito
+        print(f"Nota de crédito creada: {nota_credito}")
+
+        return {"nota_credito": nota_credito, "factura_id": factura.id}
+
     except Exception as e:
+        print(f"Error al crear la nota de crédito: {str(e)}")
+
+        # Rollback manual: eliminar entidades creadas
+        if "nota_credito" in locals():
+            db.query(NotaCredito).filter(NotaCredito.id == nota_credito.id).delete()
+            db.commit()
+            print("Rollback manual ejecutado: nota de crédito eliminada.")
+
         db.rollback()
         return {"error": f"Ocurrió un error al crear la nota de crédito: {str(e)}"}
 
 
 def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
     try:
+        print("Iniciando creación de nota de débito...")
+
+        # Validar que la factura asociada existe
         factura = (
             db.query(Factura).filter(Factura.id == documento_data.factura_id).first()
         )
         if not factura:
+            print("Error: La factura asociada no existe.")
+            db.rollback()
             return {"error": "La factura asociada no existe."}
 
+        # Validar que los detalles de la factura existen
+        detalles_factura = (
+            db.query(DetalleFactura)
+            .filter(DetalleFactura.factura_id == factura.factura_id)
+            .all()
+        )
+        if not detalles_factura:
+            print("Error: No se encontraron detalles para la factura.")
+            db.rollback()
+            return {"error": "No se encontraron detalles para la factura."}
+
+        # Validar que las modificaciones son válidas
+        for mod_detalle in documento_data.modificaciones_detalles:
+            if not any(
+                d.producto_id == mod_detalle["id_producto"] for d in detalles_factura
+            ):
+                print(
+                    f"Error: Producto con ID {mod_detalle['id_producto']} no encontrado en los detalles de la factura."
+                )
+                db.rollback()
+                return {
+                    "error": f"Producto con ID {mod_detalle['id_producto']} no encontrado en los detalles de la factura."
+                }
+
+        # Crear la nota de débito
         nota_debito = NotaDebito(
             tipo_documento="NotaDebito",
             numero_control=documento_data.numero_control,
@@ -299,14 +372,26 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
             descripcion=documento_data.descripcion,
             fecha_emision=datetime.today().date(),
             hora_emision=datetime.now().time(),
+            modificaciones_documento=documento_data.modificaciones_documento,
+            modificaciones_detalles=documento_data.modificaciones_detalles,
         )
-
         db.add(nota_debito)
         db.commit()
         db.refresh(nota_debito)
 
-        return nota_debito
+        print(f"Nota de débito creada: {nota_debito}")
+
+        return {"nota_debito": nota_debito, "factura_id": factura.id}
+
     except Exception as e:
+        print(f"Error al crear la nota de débito: {str(e)}")
+
+        # Rollback manual: eliminar entidades creadas
+        if "nota_debito" in locals():
+            db.query(NotaDebito).filter(NotaDebito.id == nota_debito.id).delete()
+            db.commit()
+            print("Rollback manual ejecutado: nota de débito eliminada.")
+
         db.rollback()
         return {"error": f"Ocurrió un error al crear la nota de débito: {str(e)}"}
 
@@ -345,15 +430,6 @@ def get_or_create_orden_entrega(db: Session, documento_data: OrdenEntregaSchema)
     except Exception as e:
         db.rollback()
         return {"error": f"Ocurrió un error al crear la orden de entrega: {str(e)}"}
-
-
-def create_operacion(db: Session, factura_id: int, tipo: str, monto: float):
-    """Crea una operación relacionada con una factura."""
-    operacion = Operacion(factura_id=factura_id, tipo=tipo, monto=monto)
-    db.add(operacion)
-    db.commit()
-    db.refresh(operacion)
-    return operacion
 
 
 def assign_numero_control(db: Session, factura_id: int):

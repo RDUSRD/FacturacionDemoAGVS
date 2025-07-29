@@ -71,3 +71,12 @@ def get_pedido_by_factura_id(db: Session, factura_id: int):
     if pedido:
         return {"pedido": pedido}  # El pedido incluirá los detalles
     return None
+
+
+def create_operacion(db: Session, factura_id: int, tipo: str, monto: float):
+    """Crea una operación relacionada con una factura."""
+    operacion = Operacion(factura_id=factura_id, tipo=tipo, monto=monto)
+    db.add(operacion)
+    db.commit()
+    db.refresh(operacion)
+    return operacion
