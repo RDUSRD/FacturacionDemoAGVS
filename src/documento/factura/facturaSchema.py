@@ -5,7 +5,7 @@ from typing import Optional
 
 class FacturaSchema(DocumentoSchema):
     tipo_documento: str = Field(
-        ..., description="Debe especificar el tipo de documento", example="Factura"
+        None, description="Debe especificar el tipo de documento", example="Factura"
     )
     cliente_id: int = Field(
         None, ge=1, description="El ID del cliente debe ser válido", example=2
@@ -46,7 +46,6 @@ class FacturaSchema(DocumentoSchema):
         from_attributes = True
         json_schema_extra = {
             "example": {
-                "tipo_documento": "Factura",
                 "aplica_igtf": True,
                 "pedido_id": 1,
             }

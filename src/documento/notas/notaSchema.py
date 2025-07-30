@@ -35,6 +35,17 @@ class NotaCreditoSchema(DocumentoSchema):
             },
         ],
     )
+    
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "tipo_documento": "Factura",
+                "aplica_igtf": True,
+                "pedido_id": 1,
+            }
+        }
+
 
 
 class NotaDebitoSchema(DocumentoSchema):
