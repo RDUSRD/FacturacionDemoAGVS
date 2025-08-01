@@ -5,7 +5,7 @@ from typing import Optional
 
 class DocumentoSchema(BaseModel):
     tipo_documento: str = Field(
-        ..., description="Debe especificar el tipo de documento", example="Factura"
+        None, description="Debe especificar el tipo de documento", example="Factura"
     )
 
     fecha_emision: Optional[date] = Field(

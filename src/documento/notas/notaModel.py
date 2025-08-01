@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, JSON, ForeignKey, Float, String
+from sqlalchemy.orm import relationship
 from src.documento.docModel import Documento
 
 
@@ -20,8 +21,14 @@ class NotaDebito(Documento):
     # JSON para modificaciones en los detalles de la factura (productos, cantidades, descuentos, etc.)
     modif_detalles = Column(JSON, nullable=True)
 
+    # Relación hacia la factura original
+    factura_id = Column(Integer, ForeignKey("factura.factura_id"), nullable=False)
+
+    # Relación con el modelo Factura
+    factura = relationship("Factura", backref="notas_debito", foreign_keys=[factura_id])
+
     __mapper_args__ = {
-        "polymorphic_identity": "Nota_debito",
+        "polymorphic_identity": "NotaDebito",
     }
 
 
@@ -43,6 +50,12 @@ class NotaCredito(Documento):
     # JSON para modificaciones en los detalles de la factura (productos, cantidades, descuentos, etc.)
     modif_detalles = Column(JSON, nullable=True)
 
+    # Relación hacia la factura original
+    factura_id = Column(Integer, ForeignKey("factura.factura_id"), nullable=False)
+
+    # Relación con el modelo Factura
+    factura = relationship("Factura", backref="notas_credito", foreign_keys=[factura_id])
+
     __mapper_args__ = {
-        "polymorphic_identity": "Nota_credito",
+        "polymorphic_identity": "NotaCredito",
     }

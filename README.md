@@ -13,9 +13,11 @@ The Facturación System is a FastAPI-based application designed to manage invoic
 - **Advanced Logging**: Custom logger with rotating file handlers and detailed request information.
 
 ## Recent Updates
-- Added a `to_dict` method to the `Auditoria` model for seamless serialization.
-- Adjusted service functions to return serialized data compatible with Pydantic.
-- Enhanced middleware to allow unprotected routes to proceed without validation.
+- **Version 0.5.3**:
+  - Fixed issues with `get_nota_debito_by_id` and `get_nota_credito_by_id` to use the correct primary keys (`nota_debito_id` and `nota_credito_id`).
+  - Enhanced logging for debit and credit note routes to include detailed request information.
+  - Updated middleware to ensure proper handling of group-based route protection.
+  - Improved error handling and logging for better debugging.
 
 ## Dependencies
 The project requires the following Python packages:

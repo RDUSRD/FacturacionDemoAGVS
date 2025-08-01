@@ -39,6 +39,8 @@ class GroupMembershipMiddleware(BaseHTTPMiddleware):
         ("/logger", "ALL"): ["authentik Admins"],
         # Rutas para el módulo autenticación
         ("/auth", "ALL"): ["authentik Admins"],
+        # Rutas para notas
+        ("/notas", "ALL"): ["authentik Admins"],
     }
 
     # Define excluded routes
@@ -62,6 +64,7 @@ class GroupMembershipMiddleware(BaseHTTPMiddleware):
                     logger.error(
                         f"Error en call_next durante la exclusión: {str(e)}",
                         exc_info=True,
+                        extra=get_request_info(request),
                     )
                     return JSONResponse(
                         status_code=500,
@@ -72,9 +75,13 @@ class GroupMembershipMiddleware(BaseHTTPMiddleware):
 
             authorization: str = request.headers.get("Authorization", "")
             if not authorization.startswith("Bearer "):
+                logger.warning(
+                    "Authorization inválido.",
+                    extra=get_request_info(request),
+                )
                 return JSONResponse(
                     status_code=401,
-                    content={"detail": "Encabezado Authorization inválido."},
+                    content={"detail": "Authorization inválido."},
                 )
 
             token = authorization.split(" ")[1]

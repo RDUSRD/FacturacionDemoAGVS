@@ -22,6 +22,7 @@ from src.pedidos.pedidoService import convert_pedido
 from src.monedas.dolar.dolarService import obtener_dolar_bcv
 from datetime import datetime
 import random
+from src.producto.prodModel import Producto  # Importar el modelo Producto
 
 
 # Funciones para obtener documentos
@@ -81,9 +82,51 @@ def generate_unique_numero_control(db: Session) -> str:
         print(f"Número de control {numero_control} ya existe. Generando uno nuevo...")
 
 
+# Helpers
+def assign_numero_control(db: Session, factura_id: int):
+    try:
+        # Obtener la factura por ID
+        factura = db.query(Factura).filter(Factura.factura_id == factura_id).first()
+        if not factura:
+            return {"error": "La factura no existe."}
+
+        # Generar un número de control único
+        numero_control = generate_unique_numero_control(db)
+        factura.numero_control = numero_control
+        factura.fecha_numero_control = datetime.today().date()
+        factura.hora_numero_control = datetime.now().time()
+
+        # Guardar los cambios en la base de datos
+        db.add(factura)
+        db.commit()
+        db.refresh(factura)
+
+        print(f"Número de control asignado: {numero_control}")
+        return factura
+
+    except Exception as e:
+        db.rollback()
+        print(f"Error al asignar el número de control: {str(e)}")
+        return {"error": f"Ocurrió un error al asignar el número de control: {str(e)}"}
+
+
 # Funciones para crear documentos
-# Estas funciones manejan la creación de documentos y sus relaciones con otros modelos
+# Estas funciones manejan la creación de documentos y sus relaciones con otros modelos, sin asignacion de numero de control.
 def get_or_create_factura(db: Session, documento_data: FacturaSchema):
+    """
+    Crea una factura a partir de un pedido existente.
+
+    Este método valida que el pedido exista y esté en un estado válido para facturación.
+    Luego, genera una factura asociada al pedido, calcula los impuestos, descuentos,
+    y totales, y actualiza el estado del pedido a "facturado".
+
+    Args:
+        db (Session): Sesión de la base de datos.
+        documento_data (FacturaSchema): Datos necesarios para crear la factura.
+
+    Returns:
+        dict: Contiene la factura creada y el ID del pedido asociado, o un mensaje de error.
+    """
     try:
         print("Iniciando creación de factura desde pedido...")
 
@@ -257,6 +300,21 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
 
 
 def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
+    """
+    Crea una nota de crédito asociada a una factura existente.
+
+    Este método valida que la factura exista y que los productos especificados en
+    las modificaciones existan en los detalles de la factura. Calcula los ajustes
+    globales (subtotal, IVA, monto exento, IGTF, total) basados en las modificaciones
+    de los detalles y registra estos ajustes en la nota de crédito.
+
+    Args:
+        db (Session): Sesión de la base de datos.
+        documento_data (NotaCreditoSchema): Datos necesarios para crear la nota de crédito.
+
+    Returns:
+        dict: Contiene la nota de crédito creada y el ID de la factura asociada, o un mensaje de error.
+    """
     try:
         print("Iniciando creación de nota de crédito...")
 
@@ -280,30 +338,114 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
             db.rollback()
             return {"error": "No se encontraron detalles para la factura."}
 
-        # Validar que las modificaciones son válidas
-        for mod_detalle in documento_data.modificaciones_detalles:
-            if not any(
-                d.producto_id == mod_detalle["id_producto"] for d in detalles_factura
-            ):
+        # Inicializar variables para ajustes globales
+        subtotal_ajustado = 0.0
+        iva_ajustado = 0.0
+        monto_exento_ajustado = 0.0
+        monto_igtf_ajustado = 0.0
+        total_ajustado = 0.0
+
+        # Validar y procesar las modificaciones
+        modificaciones_detalles = []
+        for mod_detalle in documento_data.modif_detalles:
+            # Verificar que el producto existe en la tabla Producto
+            producto_existente = (
+                db.query(Producto)
+                .filter(Producto.id == mod_detalle["id_producto"])
+                .first()
+            )
+            if not producto_existente:
                 print(
-                    f"Error: Producto con ID {mod_detalle['id_producto']} no encontrado en los detalles de la factura."
+                    f"Error: Producto con ID {mod_detalle['id_producto']} no existe en el inventario."
                 )
                 db.rollback()
                 return {
-                    "error": f"Producto con ID {mod_detalle['id_producto']} no encontrado en los detalles de la factura."
+                    "error": f"Producto con ID {mod_detalle['id_producto']} no existe en el inventario."
                 }
+
+            detalle_existente = next(
+                (
+                    d
+                    for d in detalles_factura
+                    if d.producto_id == mod_detalle["id_producto"]
+                ),
+                None,
+            )
+
+            cantidad_ajustada = float(mod_detalle.get("cantidad", 0))
+            precio_unitario_ajustado = float(mod_detalle.get("precio_unitario", 0))
+            descuento_ajustado = float(mod_detalle.get("descuento", 0))
+            es_exento = mod_detalle.get("exento", False)
+
+            total_ajustado_detalle = (
+                cantidad_ajustada * precio_unitario_ajustado
+            ) - descuento_ajustado
+
+            if detalle_existente:
+                print(
+                    f"Modificando detalle existente para producto ID {mod_detalle['id_producto']}."
+                )
+            else:
+                print(
+                    f"Agregando nuevo detalle para producto ID {mod_detalle['id_producto']}."
+                )
+
+            # Registrar el ajuste en modificaciones_detalles
+            modificaciones_detalles.append(
+                {
+                    "id_producto": mod_detalle["id_producto"],
+                    "cantidad": cantidad_ajustada,
+                    "precio_unitario": precio_unitario_ajustado,
+                    "descuento": descuento_ajustado,
+                    "exento": es_exento,
+                    "total": total_ajustado_detalle,
+                }
+            )
+
+            # Actualizar los ajustes globales
+            if es_exento:
+                monto_exento_ajustado += total_ajustado_detalle
+            else:
+                subtotal_ajustado += total_ajustado_detalle
+                iva_ajustado += total_ajustado_detalle * 0.16
+
+        # Calcular el IGTF ajustado si aplica
+        if factura.aplica_igtf:
+            print(
+                f"Subtotal ajustado: {subtotal_ajustado}, Monto exento ajustado: {monto_exento_ajustado}"
+            )
+            monto_base_total_ajustado = subtotal_ajustado + monto_exento_ajustado
+            print(f"Monto base total ajustado: {monto_base_total_ajustado}")
+            monto_igtf_ajustado = monto_base_total_ajustado * 0.03
+            print(f"Monto IGTF ajustado: {monto_igtf_ajustado}")
+
+        total_ajustado = (
+            subtotal_ajustado
+            + iva_ajustado
+            + monto_exento_ajustado
+            + monto_igtf_ajustado
+        )
+        print(f"Total ajustado: {total_ajustado}")
 
         # Crear la nota de crédito
         nota_credito = NotaCredito(
             tipo_documento="NotaCredito",
-            numero_control=documento_data.numero_control,
             factura_id=factura.id,
-            monto_credito=documento_data.monto_credito,
+            empresa_id=factura.empresa_id,
+            cliente_id=factura.cliente_id,
+            estado="creado",
+            monto_credito=round(total_ajustado, 4),
             descripcion=documento_data.descripcion,
             fecha_emision=datetime.today().date(),
             hora_emision=datetime.now().time(),
-            modificaciones_documento=documento_data.modificaciones_documento,
-            modificaciones_detalles=documento_data.modificaciones_detalles,
+            modif_documento={
+                "subtotal": round(subtotal_ajustado, 4),
+                "iva": round(iva_ajustado, 4),
+                "monto_exento": round(monto_exento_ajustado, 4),
+                "igtf": round(monto_igtf_ajustado, 4),
+                "total": round(total_ajustado, 4),
+            },
+            modif_detalles=modificaciones_detalles,
         )
         db.add(nota_credito)
         db.commit()
@@ -327,6 +469,21 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
 
 
 def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
+    """
+    Crea una nota de débito asociada a una factura existente.
+
+    Este método valida que la factura exista y permite agregar productos nuevos
+    o modificar productos existentes en los detalles de la factura. Calcula los
+    ajustes globales (subtotal, IVA, monto exento, IGTF, total) basados en las
+    modificaciones de los detalles y registra estos ajustes en la nota de débito.
+
+    Args:
+        db (Session): Sesión de la base de datos.
+        documento_data (NotaDebitoSchema): Datos necesarios para crear la nota de débito.
+
+    Returns:
+        dict: Contiene la nota de débito creada y el ID de la factura asociada, o un mensaje de error.
+    """
     try:
         print("Iniciando creación de nota de débito...")
 
@@ -345,35 +502,116 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
             .filter(DetalleFactura.factura_id == factura.factura_id)
             .all()
         )
-        if not detalles_factura:
-            print("Error: No se encontraron detalles para la factura.")
-            db.rollback()
-            return {"error": "No se encontraron detalles para la factura."}
 
-        # Validar que las modificaciones son válidas
-        for mod_detalle in documento_data.modificaciones_detalles:
-            if not any(
-                d.producto_id == mod_detalle["id_producto"] for d in detalles_factura
-            ):
+        # Inicializar variables para ajustes globales
+        subtotal_ajustado = 0
+        iva_ajustado = 0
+        monto_exento_ajustado = 0
+        monto_igtf_ajustado = 0
+        total_ajustado = 0
+
+        # Validar y procesar las modificaciones
+        modificaciones_detalles = []
+        for mod_detalle in documento_data.modif_detalles:
+            print(f"Procesando modificación de detalle: {mod_detalle}")
+            # Verificar que el producto existe en la tabla Producto
+            producto_existente = (
+                db.query(Producto)
+                .filter(Producto.id == mod_detalle["id_producto"])
+                .first()
+            )
+            if not producto_existente:
                 print(
-                    f"Error: Producto con ID {mod_detalle['id_producto']} no encontrado en los detalles de la factura."
+                    f"Error: Producto con ID {mod_detalle['id_producto']} no existe en el inventario."
                 )
                 db.rollback()
                 return {
-                    "error": f"Producto con ID {mod_detalle['id_producto']} no encontrado en los detalles de la factura."
+                    "error": f"Producto con ID {mod_detalle['id_producto']} no existe en el inventario."
                 }
+
+            detalle_existente = next(
+                (
+                    d
+                    for d in detalles_factura
+                    if d.producto_id == mod_detalle["id_producto"]
+                ),
+                None,
+            )
+
+            cantidad_ajustada = mod_detalle.get("cantidad", 0)
+            precio_unitario_ajustado = mod_detalle.get("precio_unitario", 0)
+            descuento_ajustado = mod_detalle.get("descuento", 0)
+            es_exento = mod_detalle.get("exento", False)
+
+            total_ajustado_detalle = (
+                cantidad_ajustada * precio_unitario_ajustado
+            ) - descuento_ajustado
+
+            if detalle_existente:
+                print(
+                    f"Modificando detalle existente para producto ID {mod_detalle['id_producto']}."
+                )
+            else:
+                print(
+                    f"Agregando nuevo detalle para producto ID {mod_detalle['id_producto']}."
+                )
+
+            # Registrar el ajuste en modificaciones_detalles
+            modificaciones_detalles.append(
+                {
+                    "id_producto": mod_detalle["id_producto"],
+                    "cantidad": cantidad_ajustada,
+                    "precio_unitario": precio_unitario_ajustado,
+                    "descuento": descuento_ajustado,
+                    "exento": es_exento,
+                    "total": total_ajustado_detalle,
+                }
+            )
+
+            # Actualizar los ajustes globales
+            if es_exento:
+                monto_exento_ajustado += total_ajustado_detalle
+            else:
+                subtotal_ajustado += total_ajustado_detalle
+                iva_ajustado += total_ajustado_detalle * 0.16
+
+        # Calcular el IGTF ajustado si aplica
+        if factura.aplica_igtf:
+            print(
+                f"Subtotal ajustado: {subtotal_ajustado}, Monto exento ajustado: {monto_exento_ajustado}"
+            )
+            monto_base_total_ajustado = subtotal_ajustado + monto_exento_ajustado
+            print(f"Monto base total ajustado: {monto_base_total_ajustado}")
+            monto_igtf_ajustado = monto_base_total_ajustado * 0.03
+            print(f"Monto IGTF ajustado: {monto_igtf_ajustado}")
+
+        total_ajustado = (
+            subtotal_ajustado
+            + iva_ajustado
+            + monto_exento_ajustado
+            + monto_igtf_ajustado
+        )
+        print(f"Total ajustado: {total_ajustado}")
 
         # Crear la nota de débito
         nota_debito = NotaDebito(
             tipo_documento="NotaDebito",
-            numero_control=documento_data.numero_control,
             factura_id=factura.id,
-            monto_debito=documento_data.monto_debito,
+            empresa_id=factura.empresa_id,
+            cliente_id=factura.cliente_id,
+            estado="creado",
+            monto_debito=round(total_ajustado, 4),
             descripcion=documento_data.descripcion,
             fecha_emision=datetime.today().date(),
             hora_emision=datetime.now().time(),
-            modificaciones_documento=documento_data.modificaciones_documento,
-            modificaciones_detalles=documento_data.modificaciones_detalles,
+            modif_documento={
+                "subtotal": round(subtotal_ajustado, 4),
+                "iva": round(iva_ajustado, 4),
+                "monto_exento": round(monto_exento_ajustado, 4),
+                "igtf": round(monto_igtf_ajustado, 4),
+                "total": round(total_ajustado, 4),
+            },
+            modif_detalles=modificaciones_detalles,
         )
         db.add(nota_debito)
         db.commit()
@@ -396,6 +634,7 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
         return {"error": f"Ocurrió un error al crear la nota de débito: {str(e)}"}
 
 
+# funciones sin usar aun.
 def get_or_create_orden_entrega(db: Session, documento_data: OrdenEntregaSchema):
     try:
         orden_entrega = (
@@ -430,30 +669,3 @@ def get_or_create_orden_entrega(db: Session, documento_data: OrdenEntregaSchema)
     except Exception as e:
         db.rollback()
         return {"error": f"Ocurrió un error al crear la orden de entrega: {str(e)}"}
-
-
-def assign_numero_control(db: Session, factura_id: int):
-    try:
-        # Obtener la factura por ID
-        factura = db.query(Factura).filter(Factura.factura_id == factura_id).first()
-        if not factura:
-            return {"error": "La factura no existe."}
-
-        # Generar un número de control único
-        numero_control = generate_unique_numero_control(db)
-        factura.numero_control = numero_control
-        factura.fecha_numero_control = datetime.today().date()
-        factura.hora_numero_control = datetime.now().time()
-
-        # Guardar los cambios en la base de datos
-        db.add(factura)
-        db.commit()
-        db.refresh(factura)
-
-        print(f"Número de control asignado: {numero_control}")
-        return factura
-
-    except Exception as e:
-        db.rollback()
-        print(f"Error al asignar el número de control: {str(e)}")
-        return {"error": f"Ocurrió un error al asignar el número de control: {str(e)}"}

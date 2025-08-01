@@ -30,6 +30,7 @@ from src.pedidos.pedidoRouter import router as pedido_router
 from src.documento.factura.facturaRouter import router as factura_router
 from src.monedas.monedaRouter import router as moneda_router
 from src.loggers.loggerRouter import router as logger_router
+from src.documento.notas.notaRouter import router as nota_router
 
 # from src.documento.notas.notaRouter import router as nota_router
 # from src.documento.orden_entrega.ordenEntregaRouter import (
@@ -131,7 +132,7 @@ app.include_router(producto_router)
 app.include_router(pedido_router)
 app.include_router(documento_router)
 app.include_router(factura_router)
-# app.include_router(nota_router)
+app.include_router(nota_router)
 # app.include_router(orden_entrega_router)
 # app.include_router(comprobante_retencion_router)
 app.include_router(detalle_factura_router)
