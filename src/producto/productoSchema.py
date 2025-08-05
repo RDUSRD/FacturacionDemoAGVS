@@ -41,7 +41,11 @@ class ProductoSchema(BaseModel):
         example=False,
     )
     descuento: Optional[float] = Field(
-        0.0, ge=0, description="Monto del descuento aplicado al producto", example=10.0
+        0.0,
+        ge=0,
+        le=1,
+        description="Porcentaje de descuento aplicado al producto (entre 0 y 1)",
+        example=0.1,
     )
 
     class Config:
@@ -53,7 +57,7 @@ class ProductoSchema(BaseModel):
                 "status": "activo",
                 "stock": 100,
                 "exento": False,
-                "descuento": 10.0,
+                "descuento": 0.1,  # Representa un 10% de descuento
             }
         }
 
@@ -99,7 +103,11 @@ class ProductoUpdateSchema(BaseModel):
         example=False,
     )
     descuento: Optional[float] = Field(
-        None, ge=0, description="Monto del descuento aplicado al producto", example=10.0
+        None,
+        ge=0,
+        le=1,
+        description="Porcentaje de descuento aplicado al producto (entre 0 y 1)",
+        example=10.0,
     )
 
     class Config:
@@ -111,6 +119,6 @@ class ProductoUpdateSchema(BaseModel):
                 "status": "activo",
                 "stock": 100,
                 "exento": False,
-                "descuento": 10.0,
+                "descuento": 0.1,  # Representa un 10% de descuento
             }
         }

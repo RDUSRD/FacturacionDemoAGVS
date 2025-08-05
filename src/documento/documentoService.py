@@ -354,21 +354,7 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
         # Validar y procesar las modificaciones
         modificaciones_detalles = []
         for mod_detalle in documento_data.modif_detalles:
-            # Verificar que el producto existe en la tabla Producto
-            producto_existente = (
-                db.query(Producto)
-                .filter(Producto.id == mod_detalle["id_producto"])
-                .first()
-            )
-            if not producto_existente:
-                print(
-                    f"Error: Producto con ID {mod_detalle['id_producto']} no existe en el inventario."
-                )
-                db.rollback()
-                return {
-                    "error": f"Producto con ID {mod_detalle['id_producto']} no existe en el inventario."
-                }
-
+            # Verificar que el producto existe en los detalles de la factura anterior
             detalle_existente = next(
                 (
                     d
@@ -378,36 +364,46 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
                 None,
             )
 
+            if not detalle_existente:
+                print(
+                    f"Error: Producto con ID {mod_detalle['id_producto']} no existe en la factura anterior."
+                )
+                db.rollback()
+                return {
+                    "error": f"Producto con ID {mod_detalle['id_producto']} no existe en la factura anterior."
+                }
+
             cantidad_ajustada = float(mod_detalle.get("cantidad", 0))
             precio_unitario_ajustado = float(mod_detalle.get("precio_unitario", 0))
             descuento_ajustado = float(mod_detalle.get("descuento", 0))
-            es_exento = mod_detalle.get("exento", False)
 
-            total_ajustado_detalle = (cantidad_ajustada * precio_unitario_ajustado) * (1 - descuento_ajustado)  # Interpretar descuento como porcentaje
-
-            if detalle_existente:
+            # Validar que el descuento esté entre 0 y 1
+            if not (0 <= descuento_ajustado <= 1):
                 print(
-                    f"Modificando detalle existente para producto ID {mod_detalle['id_producto']}."
+                    f"Error: Descuento inválido para el producto ID {mod_detalle['id_producto']}. Debe estar entre 0 y 1."
                 )
-            else:
-                print(
-                    f"Agregando nuevo detalle para producto ID {mod_detalle['id_producto']}."
-                )
+                db.rollback()
+                return {
+                    "error": f"Descuento inválido para el producto ID {mod_detalle['id_producto']}. Debe estar entre 0 y 1."
+                }
 
-            # Registrar el ajuste en modificaciones_detalles
+            total_ajustado_detalle = (cantidad_ajustada * precio_unitario_ajustado) * (
+                1 - descuento_ajustado
+            )  # Interpretar descuento como porcentaje
+
             modificaciones_detalles.append(
                 {
                     "id_producto": mod_detalle["id_producto"],
                     "cantidad": cantidad_ajustada,
                     "precio_unitario": precio_unitario_ajustado,
                     "descuento": descuento_ajustado,
-                    "exento": es_exento,
+                    "exento": mod_detalle.get("exento", False),
                     "total": total_ajustado_detalle,
                 }
             )
 
             # Actualizar los ajustes globales
-            if es_exento:
+            if mod_detalle.get("exento", False):
                 monto_exento_ajustado += total_ajustado_detalle
             else:
                 subtotal_ajustado += total_ajustado_detalle
@@ -533,45 +529,37 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
                     "error": f"Producto con ID {mod_detalle['id_producto']} no existe en el inventario."
                 }
 
-            detalle_existente = next(
-                (
-                    d
-                    for d in detalles_factura
-                    if d.producto_id == mod_detalle["id_producto"]
-                ),
-                None,
-            )
-
             cantidad_ajustada = mod_detalle.get("cantidad", 0)
             precio_unitario_ajustado = mod_detalle.get("precio_unitario", 0)
             descuento_ajustado = mod_detalle.get("descuento", 0)
-            es_exento = mod_detalle.get("exento", False)
 
-            total_ajustado_detalle = (cantidad_ajustada * precio_unitario_ajustado) * (1 - descuento_ajustado)  # Interpretar descuento como porcentaje
-
-            if detalle_existente:
+            # Validar que el descuento esté entre 0 y 1
+            if not (0 <= descuento_ajustado <= 1):
                 print(
-                    f"Modificando detalle existente para producto ID {mod_detalle['id_producto']}."
+                    f"Error: Descuento inválido para el producto ID {mod_detalle['id_producto']}. Debe estar entre 0 y 1."
                 )
-            else:
-                print(
-                    f"Agregando nuevo detalle para producto ID {mod_detalle['id_producto']}."
-                )
+                db.rollback()
+                return {
+                    "error": f"Descuento inválido para el producto ID {mod_detalle['id_producto']}. Debe estar entre 0 y 1."
+                }
 
-            # Registrar el ajuste en modificaciones_detalles
+            total_ajustado_detalle = (cantidad_ajustada * precio_unitario_ajustado) * (
+                1 - descuento_ajustado
+            )  # Interpretar descuento como porcentaje
+
             modificaciones_detalles.append(
                 {
                     "id_producto": mod_detalle["id_producto"],
                     "cantidad": cantidad_ajustada,
                     "precio_unitario": precio_unitario_ajustado,
                     "descuento": descuento_ajustado,
-                    "exento": es_exento,
+                    "exento": mod_detalle.get("exento", False),
                     "total": total_ajustado_detalle,
                 }
             )
 
             # Actualizar los ajustes globales
-            if es_exento:
+            if mod_detalle.get("exento", False):
                 monto_exento_ajustado += total_ajustado_detalle
             else:
                 subtotal_ajustado += total_ajustado_detalle
