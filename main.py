@@ -110,9 +110,9 @@ async def lifespan_with_reset_and_cron(app: FastAPI):
 USE_RESET = os.getenv("RESET_DB", "False").lower() == "true"
 
 app = FastAPI(
-    description="API para la gestión de documentos y facturación",
+    description="Version de notas de debito y credito",
     title="API Facturacion AGV Services",
-    version="0.4.10",
+    version="0.5.3",
     lifespan=lifespan_with_reset_and_cron if USE_RESET else lifespan_with_cron,
 )
 
