@@ -179,25 +179,31 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
         for detalle_pedido in pedido.detalles:
             print(f"Procesando detalle del pedido: {detalle_pedido}")
 
+            # Calcular el total del producto antes del descuento
             total_producto = detalle_pedido.cantidad * detalle_pedido.precio_unitario
-            descuento_producto = detalle_pedido.descuento * detalle_pedido.cantidad
+
+            # Aplicar el descuento como porcentaje
+            descuento_producto = total_producto * detalle_pedido.descuento  # descuento es un porcentaje (e.g., 0.1 para 10%)
+            total_con_descuento = total_producto - descuento_producto
+
             descuento_total += descuento_producto
             print(
-                f"Total del producto: {total_producto}, Descuento aplicado: {descuento_producto}"
+                f"Total del producto: {total_producto}, Descuento aplicado: {descuento_producto}, Total con descuento: {total_con_descuento}"
             )
 
+            # Determinar si el producto es exento o no y actualizar los montos correspondientes
             if detalle_pedido.producto.exento:
                 print("Producto exento, no se aplica IVA.")
-                monto_exento += total_producto
+                monto_exento += total_con_descuento
             else:
-                monto_base += total_producto
+                monto_base += total_con_descuento
 
             # Crear detalle de factura
             detalle_factura = DetalleFactura(
                 factura_id=factura.factura_id,
                 producto_id=detalle_pedido.producto_id,
                 cantidad=detalle_pedido.cantidad,
-                total=total_producto,
+                total=total_con_descuento,  # Total después del descuento
             )
             db.add(detalle_factura)
             print(f"Detalle de factura creado: {detalle_factura}")
@@ -377,9 +383,7 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
             descuento_ajustado = float(mod_detalle.get("descuento", 0))
             es_exento = mod_detalle.get("exento", False)
 
-            total_ajustado_detalle = (
-                cantidad_ajustada * precio_unitario_ajustado
-            ) - descuento_ajustado
+            total_ajustado_detalle = (cantidad_ajustada * precio_unitario_ajustado) * (1 - descuento_ajustado)  # Interpretar descuento como porcentaje
 
             if detalle_existente:
                 print(
@@ -543,9 +547,7 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
             descuento_ajustado = mod_detalle.get("descuento", 0)
             es_exento = mod_detalle.get("exento", False)
 
-            total_ajustado_detalle = (
-                cantidad_ajustada * precio_unitario_ajustado
-            ) - descuento_ajustado
+            total_ajustado_detalle = (cantidad_ajustada * precio_unitario_ajustado) * (1 - descuento_ajustado)  # Interpretar descuento como porcentaje
 
             if detalle_existente:
                 print(
