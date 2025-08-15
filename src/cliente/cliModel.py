@@ -9,6 +9,8 @@ class Cliente(Base):
     nombre = Column(String(255), nullable=False)
     rif = Column(String(50), unique=True, nullable=False)
     domicilio_fiscal = Column(Text, nullable=False)
+    email = Column(String(100), nullable=True)
+    telefono = Column(String(20), nullable=True)
     date_created = Column(String(50), nullable=False, default=lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     date_updated = Column(String(50), nullable=True)
 

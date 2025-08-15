@@ -15,8 +15,11 @@ class PedidoSchema(BaseModel):
     total: Optional[float] = Field(
         None, ge=0, description="El total debe ser mayor o igual a 0", example=500.00
     )
-    observaciones: Optional[str] = Field(
-        None, description="Observaciones del pedido", example="Pedido urgente"
+    tasa_cambio: Optional[float] = Field(
+        None,
+        ge=0,
+        description="La tasa de cambio debe ser mayor o igual a 0",
+        example=1.00,
     )
     detalles_pedido: Optional[list] = Field(
         None,
@@ -54,6 +57,12 @@ class PedidoUpdateSchema(BaseModel):
     )
     total: Optional[float] = Field(
         None, ge=0, description="El total debe ser mayor o igual a 0", example=500.00
+    )
+    tasa_cambio: Optional[float] = Field(
+        None,
+        ge=0,
+        description="La tasa de cambio debe ser mayor o igual a 0",
+        example=1.00,
     )
     observaciones: Optional[str] = Field(
         None, description="Observaciones del pedido", example="Pedido urgente"

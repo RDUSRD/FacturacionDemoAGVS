@@ -5,6 +5,7 @@ from src.cliente.clienteService import get_cliente_by_id
 from src.empresa.empresaService import get_empresa_by_id
 from src.pedidos.detallePedido.detallePedidoModel import DetallePedido
 from src.producto.prodModel import Producto
+from src.monedas.monedasService import get_tasa_cambio_actual
 
 
 # Create a new Pedido
@@ -19,6 +20,9 @@ def create_pedido(db: Session, pedido_data: PedidoSchema):
         empresa = get_empresa_by_id(db, pedido_data.empresa_id)
         if not empresa:
             raise ValueError("La empresa especificada no existe.")
+        
+        # Get the current value of tasa_cambio
+        tasa_cambio = get_tasa_cambio_actual(db)
 
         # Initialize total for the pedido
         total_pedido = 0
@@ -47,6 +51,7 @@ def create_pedido(db: Session, pedido_data: PedidoSchema):
                 cantidad=detalle_data["cantidad"],
                 precio_unitario=precio_unitario,
                 descuento=descuento,
+                alicuota_iva=producto.alicuota_iva,
                 total=total_detalle,
             )
             detalles_pedido.append(detalle_pedido)
@@ -56,6 +61,7 @@ def create_pedido(db: Session, pedido_data: PedidoSchema):
             cliente_id=pedido_data.cliente_id,
             empresa_id=pedido_data.empresa_id,
             estado="pendiente",
+            tasa_cambio=tasa_cambio,
             total=total_pedido,
             observaciones=pedido_data.observaciones,
         )
@@ -79,6 +85,7 @@ def create_pedido(db: Session, pedido_data: PedidoSchema):
             "fecha_creacion": pedido.fecha_creacion,
             "fecha_actualizacion": pedido.fecha_actualizacion,
             "fecha_vencimiento": pedido.fecha_vencimiento,
+            "tasa_cambio": float(tasa_cambio) if tasa_cambio else None,
             "total": float(pedido.total) if pedido.total else None,
             "observaciones": pedido.observaciones,
         }
@@ -91,6 +98,7 @@ def create_pedido(db: Session, pedido_data: PedidoSchema):
                 "cantidad": detalle.cantidad,
                 "precio_unitario": float(detalle.precio_unitario),
                 "descuento": float(detalle.descuento) if detalle.descuento else None,
+                "alicuota_iva": float(detalle.alicuota_iva) if detalle.alicuota_iva else None,
                 "total": float(detalle.total),
             }
             for detalle in detalles_pedido

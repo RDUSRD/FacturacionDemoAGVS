@@ -23,6 +23,7 @@ class Pedido(Base):
         onupdate=lambda: datetime.now(timezone.utc) + timedelta(hours=2),  # 2 horas después de la actualización
         nullable=True,
     )  # Fecha de vencimiento del pedido
+    tasa_cambio = Column(Numeric(10, 4), nullable=True)
     total = Column(Numeric(10, 2), nullable=True)
     observaciones = Column(String(255), nullable=True)
 

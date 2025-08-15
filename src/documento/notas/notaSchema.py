@@ -45,6 +45,7 @@ class NotaCreditoSchema(DocumentoSchema):
                         "cantidad": 2,
                         "precio_unitario": 75.0,
                         "descuento": 5.0,
+                        "alicuota_iva": 16,
                         "exento": False,
                         "total": 145.0
                     },
@@ -53,6 +54,7 @@ class NotaCreditoSchema(DocumentoSchema):
                         "cantidad": 1,
                         "precio_unitario": 50.0,
                         "descuento": 0.0,
+                        "alicuota_iva": 8,
                         "exento": True,
                         "total": 50.0
                     }
@@ -104,6 +106,7 @@ class NotaDebitoSchema(DocumentoSchema):
                         "cantidad": 3,
                         "precio_unitario": 100.0,
                         "descuento": 0.1,
+                        "alicuota_iva": 16,
                         "exento": False,
                         "total": 299.9
                     },
@@ -112,6 +115,7 @@ class NotaDebitoSchema(DocumentoSchema):
                         "cantidad": 1,
                         "precio_unitario": 75.0,
                         "descuento": 0.0,
+                        "alicuota_iva": 8,
                         "exento": True,
                         "total": 75.0
                     }

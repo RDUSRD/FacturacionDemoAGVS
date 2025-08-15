@@ -20,6 +20,12 @@ class DocumentoSchema(BaseModel):
     cliente_id: int = Field(
         ..., ge=1, description="El ID del cliente debe ser válido", example=2
     )
+    tasa_cambio: Optional[float] = Field(
+        None,
+        ge=0,
+        description="La tasa de cambio debe ser mayor o igual a 0",
+        example=1.00,
+    )
 
     class Config:
         from_attributes = True

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Time, ForeignKey
+from sqlalchemy import Column, Integer, Numeric, String, Date, Time, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declared_attr
 from database import Base
@@ -14,6 +14,7 @@ class Documento(Base):
     empresa_id = Column(Integer, ForeignKey("empresa.id"), nullable=False)
     cliente_id = Column(Integer, ForeignKey("cliente.id"), nullable=False)
     estado = Column(String(50), nullable=False)
+    tasa_cambio = Column(Numeric(10, 4), nullable=True)
     fecha_numero_control = Column(Date, nullable=True)
     hora_numero_control = Column(Time, nullable=True)
 

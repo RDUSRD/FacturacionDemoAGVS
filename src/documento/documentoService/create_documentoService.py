@@ -19,6 +19,7 @@ from src.empresa.empresaService import get_empresa_by_id
 from src.monedas.dolar.dolarService import obtener_dolar_bcv
 from src.pedidos.pedidoModel import Pedido
 from src.producto.prodModel import Producto
+import requests  # Para realizar solicitudes HTTP
 
 # endregion
 
@@ -48,7 +49,9 @@ def validar_existencia(db: Session, modelo, id, nombre_entidad):
 # Función para calcular totales e impuestos
 def calcular_totales(detalles, aplica_igtf, precio_bcv):
     monto_exento = 0
-    monto_base = 0
+    monto_base_general = 0
+    monto_base_reducida = 0
+    monto_base_adicional = 0
     descuento_total = 0
 
     for detalle in detalles:
@@ -58,27 +61,53 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
             )
 
         total_producto = detalle.cantidad * detalle.precio_unitario
-        descuento_producto = total_producto * (detalle.descuento or 0)
-        total_con_descuento = total_producto - descuento_producto
 
+        # Calcular IVA antes de aplicar el descuento
+        if detalle.producto.exento:
+            monto_exento += total_producto
+        elif detalle.alicuota_iva == 16:
+            monto_base_general += total_producto
+        elif detalle.alicuota_iva == 8:
+            monto_base_reducida += total_producto
+        elif detalle.alicuota_iva == 15:
+            monto_base_adicional += total_producto
+
+        # Aplicar descuento después de calcular el IVA
+        descuento_producto = total_producto * (detalle.descuento or 0)
         descuento_total += descuento_producto
 
-        if detalle.producto.exento:
-            monto_exento += total_con_descuento
-        else:
-            monto_base += total_con_descuento
+    # Calcular IVA basado en las bases acumuladas
+    iva_general_monto = round(monto_base_general * Decimal("0.16"), 4)
+    iva_reducida_monto = round(monto_base_reducida * Decimal("0.08"), 4)
+    iva_adicional_monto = round(monto_base_adicional * Decimal("0.15"), 4)
 
-    iva_monto = round(monto_base * Decimal("0.16"), 2)
+    # Calcular el monto total sumando las bases, IVA y restando descuentos
+    monto_total = (
+        monto_base_general + iva_general_monto +
+        monto_base_reducida + iva_reducida_monto +
+        monto_base_adicional + iva_adicional_monto +
+        monto_exento - descuento_total
+    )
+
+    # Calcular IGTF si aplica
     monto_igtf = 0
-    if aplica_igtf and (monto_base + monto_exento) > 0:
-        monto_igtf = round((monto_base + monto_exento) * Decimal("0.03"), 2)
+    if aplica_igtf and monto_total > 0:
+        monto_igtf = round(monto_total * Decimal("0.03"), 2)
 
     return {
         "monto_exento": max(monto_exento, 0),
-        "monto_base": max(monto_base, 0),
+        "monto_base_general": max(monto_base_general, 0),
+        "monto_base_reducida": max(monto_base_reducida, 0),
+        "monto_base_adicional": max(monto_base_adicional, 0),
         "descuento_total": max(descuento_total, 0),
-        "iva_monto": max(iva_monto, 0),
+        "iva_general": 16,  # Porcentaje de IVA general
+        "iva_reducida": 8,  # Porcentaje de IVA reducida
+        "iva_adicional": 15,  # Porcentaje de IVA adicional
+        "iva_general_monto": max(iva_general_monto, 0),
+        "iva_reducida_monto": max(iva_reducida_monto, 0),
+        "iva_adicional_monto": max(iva_adicional_monto, 0),
         "monto_igtf": max(monto_igtf, 0),
+        "monto_total": max(monto_total + monto_igtf, 0),
     }
 
 
@@ -170,7 +199,7 @@ def obtener_siguiente_id_nota_credito(db: Session):
     return (ultimo_nota_credito_id[0] + 1) if ultimo_nota_credito_id else 1
 
 
-# Función para obtener el siguiente ID disponible en la tabla nota_debito
+# Función para obtener el siguiente ID disponible in la tabla nota_debito
 def obtener_siguiente_id_nota_debito(db: Session):
     ultimo_nota_debito_id = (
         db.query(NotaDebito.nota_debito_id).order_by(NotaDebito.nota_debito_id.desc()).first()
@@ -199,7 +228,7 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                 )
 
             # Obtener el precio del BCV
-            precio_bcv = obtener_dolar_bcv(db)
+            precio_bcv = pedido.tasa_cambio
             if not isinstance(precio_bcv, (int, float)) or precio_bcv <= 0:
                 raise ValueError("El precio del BCV no es válido.")
 
@@ -215,6 +244,7 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                 fecha_emision=datetime.today().date(),
                 hora_emision=datetime.now().time(),
                 aplica_igtf=documento_data.aplica_igtf,
+                tasa_cambio=pedido.tasa_cambio,
             )
             db.add(factura)
             db.flush()  # Sincronizar para obtener el ID de la factura sin confirmar la transacción
@@ -229,6 +259,8 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                     factura_id=factura.factura_id,
                     producto_id=detalle_pedido.producto_id,
                     cantidad=detalle_pedido.cantidad,
+                    alicuota_iva=detalle_pedido.alicuota_iva,
+                    precio_unitario=detalle_pedido.precio_unitario,
                     total=detalle_pedido.cantidad * detalle_pedido.precio_unitario,
                 )
                 db.add(detalle_factura)
@@ -236,15 +268,28 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
             # Crear impuestos
             impuesto = iva(
                 factura_id=factura.factura_id,
-                base=totales["monto_base"],
-                monto=totales["iva_monto"],
                 monto_exento=totales["monto_exento"],
+                monto_base_general=totales["monto_base_general"],
+                monto_base_reducida=totales["monto_base_reducida"],
+                monto_base_adicional=totales["monto_base_adicional"],
+                iva_general=totales["iva_general"],
+                iva_reducida=totales["iva_reducida"],
+                iva_adicional=totales["iva_adicional"],
+                monto=totales["monto_total"],
             )
             db.add(impuesto)
 
             # Actualizar el estado del pedido
             pedido.estado = "facturado"
             db.add(pedido)
+
+            # Enviar a imprenta digital
+            cliente = get_cliente_by_id(db, factura.cliente_id)
+            empresa = get_empresa_by_id(db, factura.empresa_id)
+            json_imprenta = generar_json_imprenta(factura, pedido.detalles, cliente, empresa, impuesto, precio_bcv, 1)
+            url_imprenta = "http://api.imprenta-digital.com/generar-factura"  # URL de ejemplo, ajusta según sea necesario
+            respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_imprenta)
+            print(f"Respuesta de la API de imprenta: {respuesta_imprenta}")
 
             fact = parse_factura(factura, totales)
             return {"factura creada": fact, "pedido_id": pedido.id}
@@ -308,6 +353,11 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
                 .filter(DetalleFactura.factura_id == factura.factura_id)
                 .all()
             )
+            
+            # Obtener el precio del BCV
+            precio_bcv = obtener_dolar_bcv(db)
+            if not isinstance(precio_bcv, (int, float)) or precio_bcv <= 0:
+                raise ValueError("El precio del BCV no es válido.")
 
             # Inicializar variables para ajustes globales
             subtotal_ajustado = 0.0
@@ -356,6 +406,7 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
                         "cantidad": cantidad_ajustada,
                         "precio_unitario": precio_unitario_ajustado,
                         "descuento": descuento_ajustado,
+                        "alicuota_iva": mod_detalle.get("alicuota_iva", 0),
                         "exento": mod_detalle.get("exento", False),
                         "total": total_ajustado_detalle,
                     }
@@ -395,15 +446,26 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
                 fecha_emision=datetime.today().date(),
                 hora_emision=datetime.now().time(),
                 modif_documento={
-                    "subtotal": round(subtotal_ajustado, 4),
-                    "iva": round(iva_ajustado, 4),
                     "monto_exento": round(monto_exento_ajustado, 4),
+                    "monto_base_general": round(subtotal_ajustado, 4),
+                    "monto_base_reducida": round(0, 4),  # Ajustar si hay base reducida
+                    "monto_base_adicional": round(0, 4),  # Ajustar si hay base adicional
+                    "iva_general": round(iva_ajustado, 4),
+                    "iva_reducida": round(0, 4),  # Ajustar si hay IVA reducido
+                    "iva_adicional": round(0, 4),  # Ajustar si hay IVA adicional
                     "igtf": round(monto_igtf_ajustado, 4),
-                    "total": round(total_ajustado, 4),
                 },
                 modif_detalles=modificaciones_detalles,
             )
             db.add(nota_credito)
+
+            # Enviar a imprenta digital
+            cliente = get_cliente_by_id(db, factura.cliente_id)
+            empresa = get_empresa_by_id(db, factura.empresa_id)
+            json_imprenta = generar_json_imprenta(nota_credito, nota_credito.modif_detalles, cliente, empresa, precio_bcv, 3)
+            url_imprenta = "http://api.imprenta-digital.com/generar-nota-credito"  # URL de ejemplo, ajusta según sea necesario
+            respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_imprenta)
+            print(f"Respuesta de la API de imprenta: {respuesta_imprenta}")
 
             parsed_nota_credito = parse_nota_credito(nota_credito)
             return {"nota_credito": parsed_nota_credito, "factura_id": factura.id}
@@ -460,6 +522,11 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
             if not factura:
                 raise ValueError("La factura asociada no existe.")
 
+            # Obtener el precio del BCV
+            precio_bcv = obtener_dolar_bcv(db)
+            if not isinstance(precio_bcv, (int, float)) or precio_bcv <= 0:
+                raise ValueError("El precio del BCV no es válido.")
+
             # Inicializar variables para ajustes globales
             subtotal_ajustado = 0
             iva_ajustado = 0
@@ -503,6 +570,7 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
                         "cantidad": cantidad_ajustada,
                         "precio_unitario": precio_unitario_ajustado,
                         "descuento": descuento_ajustado,
+                        "alicuota_iva": mod_detalle.get("alicuota_iva", 0),
                         "exento": mod_detalle.get("exento", False),
                         "total": total_ajustado_detalle,
                     }
@@ -541,15 +609,26 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
                 fecha_emision=datetime.today().date(),
                 hora_emision=datetime.now().time(),
                 modif_documento={
-                    "subtotal": round(subtotal_ajustado, 4),
-                    "iva": round(iva_ajustado, 4),
                     "monto_exento": round(monto_exento_ajustado, 4),
+                    "monto_base_general": round(subtotal_ajustado, 4),
+                    "monto_base_reducida": round(0, 4),  # Ajustar si hay base reducida
+                    "monto_base_adicional": round(0, 4),  # Ajustar si hay base adicional
+                    "iva_general": round(iva_ajustado, 4),
+                    "iva_reducida": round(0, 4),  # Ajustar si hay IVA reducido
+                    "iva_adicional": round(0, 4),  # Ajustar si hay IVA adicional
                     "igtf": round(monto_igtf_ajustado, 4),
-                    "total": round(total_ajustado, 4),
                 },
                 modif_detalles=modificaciones_detalles,
             )
             db.add(nota_debito)
+
+            # Enviar a imprenta digital
+            cliente = get_cliente_by_id(db, factura.cliente_id)
+            empresa = get_empresa_by_id(db, factura.empresa_id)
+            json_imprenta = generar_json_imprenta(nota_debito, modificaciones_detalles, cliente, empresa, precio_bcv, 2)
+            url_imprenta = "http://api.imprenta-digital.com/generar-nota-debito"  # URL de ejemplo, ajusta según sea necesario
+            respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_imprenta)
+            print(f"Respuesta de la API de imprenta: {respuesta_imprenta}")
 
             parsed_nota_debito = parse_nota_debito(nota_debito)
             return {"nota_debito": parsed_nota_debito, "factura_id": factura.id}
@@ -612,3 +691,65 @@ def get_or_create_orden_entrega(db: Session, documento_data: OrdenEntregaSchema)
 
 
 # endregion
+
+# Función para generar el JSON para la API de imprenta digital
+def generar_json_imprenta(factura: Factura, detalles: list, cliente: dict, empresa: dict, precio_bcv: float, tipo_documento: int):
+    json_data = {
+        "rif": empresa["rif"],
+        "trackingid": "0",
+        "nombrecliente": cliente["nombre"],
+        "rifcedulacliente": cliente["rif_cedula"],
+        "emailcliente": cliente["email"],
+        "telefonocliente": cliente["telefono"],
+        "idtipocedulacliente": 3,  # 1: V, 2: E, ajusta según sea necesario
+        "idtipodocumento": tipo_documento,  # 1: Factura, ajusta según el tipo de documento
+        "direccioncliente": cliente["direccion"],
+        "subtotal": factura.subtotal,
+        "exento": factura.monto_exento,
+        "tasag": 16,  # Tasa general (ajusta según sea necesario)
+        "baseg": factura.monto_base,
+        "impuestog": factura.iva_monto,
+        "tasar": 8,  # Tasa reducida (ajusta según sea necesario)
+        "baser": 0.0,  # Base para tasa reducida (ajusta según sea necesario)
+        "impuestor": 0.0,  # Impuesto para tasa reducida (ajusta según sea necesario)
+        "tasaa": 0.0,  # Tasa adicional (ajusta según sea necesario)
+        "basea": 0.0,  # Base para tasa adicional (ajusta según sea necesario)
+        "impuestoa": 0.0,  # Impuesto para tasa adicional (ajusta según sea necesario)
+        "tasaigtf": 3,  # Tasa IGTF
+        "baseigtf": factura.monto_base + factura.monto_exento,
+        "impuestoigtf": factura.monto_igtf,
+        "total": factura.total,
+        "sendmail": "1",  # Enviar correo al cliente
+        "relacionado": "",  # Número de control relacionado (si aplica)
+        "sucursal": "",
+        "numerointerno": factura.factura_id,
+        "tasacambio": precio_bcv,
+        "Observacion": "Factura generada automáticamente.",
+        "cuerpofactura": [
+            {
+                "codigo": detalle.producto_id,
+                "descripcion": detalle.producto.nombre,
+                "comentario": "",
+                "precio": detalle.precio_unitario,
+                "cantidad": detalle.cantidad,
+                "tasa": 16 if not detalle.producto.exento else 0,
+                "impuesto": detalle.total * 0.16 if not detalle.producto.exento else 0,
+                "descuento": detalle.descuento,
+                "exento": detalle.producto.exento,
+                "monto": detalle.total,
+            }
+            for detalle in detalles
+        ],
+        "formasdepago": "",  # Agrega formas de pago si aplica
+    }
+    return json_data
+
+# Función para enviar el JSON a la API de imprenta digital
+def enviar_a_imprenta(json_data: dict, url: str):
+    try:
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(url, json=json_data, headers=headers)
+        response.raise_for_status()  # Lanza una excepción si la respuesta no es 2xx
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        return {"error": str(e)}

@@ -12,6 +12,7 @@ class DetallePedido(Base):
     cantidad = Column(Integer, nullable=False)
     precio_unitario = Column(Numeric(10, 2), nullable=False)
     descuento = Column(Numeric(10, 2), nullable=True, default=0.0)
+    alicuota_iva = Column(Numeric(5, 2), nullable=True, default=0.0)  # Porcentaje de alícuota del IVA
     total = Column(Numeric(10, 2), nullable=False)
 
     pedido = relationship("Pedido", back_populates="detalles")
