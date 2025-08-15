@@ -6,7 +6,7 @@ from database import Base
 class Documento(Base):
     __tablename__ = "documento"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=False)  # Desactivar autoincremento
     tipo_documento = Column(String(50), nullable=False)
     numero_control = Column(String(50), nullable=True)
     fecha_emision = Column(Date, nullable=False)

@@ -6,7 +6,7 @@ from src.documento.docModel import Documento
 class NotaDebito(Documento):
     __tablename__ = "nota_debito"
 
-    nota_debito_id = Column(Integer, primary_key=True, autoincrement=True)
+    nota_debito_id = Column(Integer, primary_key=True)
     documento_id = Column(Integer, ForeignKey("documento.id"), nullable=False)
 
     # Monto de la nota de débito
@@ -35,7 +35,7 @@ class NotaDebito(Documento):
 class NotaCredito(Documento):
     __tablename__ = "nota_credito"
 
-    nota_credito_id = Column(Integer, primary_key=True, autoincrement=True)
+    nota_credito_id = Column(Integer, primary_key=True)
     documento_id = Column(Integer, ForeignKey("documento.id"), nullable=False)
 
     # Monto de la nota de crédito

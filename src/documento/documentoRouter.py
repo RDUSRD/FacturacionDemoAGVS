@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from database import get_db
-from src.documento.documentoService import (
+from src.documento.documentoService.get_documentoService import (
     get_documento_by_id,
     get_all_documentos,
     get_documento_by_numero_control,
     get_documentos_by_empresa_id,
     get_documentos_by_cliente_id,
+)
+from src.documento.documentoService.create_documentoService import (
     get_or_create_factura,
     get_or_create_nota_credito,
     get_or_create_nota_debito,

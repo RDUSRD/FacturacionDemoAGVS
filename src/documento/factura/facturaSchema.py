@@ -24,11 +24,6 @@ class FacturaSchema(DocumentoSchema):
         description="Lista de impuestos aplicados a la factura",
         example=[{"base": 800, "monto": 160}],
     )
-    operaciones: Optional[list] = Field(
-        None,
-        description="Lista de operaciones asociadas a la factura",
-        example=[{"tipo": "venta", "monto": 1000}],
-    )
     detalles_factura: list = Field(
         None,
         description="Lista de detalles de la factura",

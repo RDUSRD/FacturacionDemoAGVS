@@ -6,7 +6,7 @@ from sqlalchemy.types import Boolean
 
 class Factura(Documento):
     __tablename__ = "factura"
-    factura_id = Column(Integer, primary_key=True, autoincrement=True)
+    factura_id = Column(Integer, primary_key=True)  # Eliminar autoincrement
     documento_id = Column(Integer, ForeignKey("documento.id"), nullable=False)
     pedido_id = Column(Integer, ForeignKey("pedido.id"), nullable=False)  # Relación con Pedido
     descuento_total = Column(Float, nullable=True, default=0.0)

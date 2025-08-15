@@ -6,7 +6,6 @@ from src.documento.factura.facturaService import (
     get_documentos_by_empresa_id,
     get_factura_by_id,
     get_all_facturas,
-    get_operaciones_by_factura_id,
     get_iva_by_factura_id,
     get_detalles_factura_by_factura_id,
     get_factura_by_numero_control,
@@ -31,7 +30,9 @@ def get_factura(factura_id: int, request: Request, db: Session = Depends(get_db)
     logger.info(f"Obteniendo factura con ID: {factura_id}", extra=request_info)
     factura = get_factura_by_id(db, factura_id)
     if not factura:
-        logger.warning(f"Factura con ID: {factura_id} no encontrada", extra=request_info)
+        logger.warning(
+            f"Factura con ID: {factura_id} no encontrada", extra=request_info
+        )
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     return factura
 
@@ -42,7 +43,8 @@ def get_factura_by_numero_control_route(
 ):
     request_info = get_request_info(request)
     logger.info(
-        f"Obteniendo factura con número de control: {numero_control}", extra=request_info
+        f"Obteniendo factura con número de control: {numero_control}",
+        extra=request_info,
     )
     factura = get_factura_by_numero_control(db, numero_control)
     if not factura:
@@ -59,7 +61,9 @@ def get_facturas_by_empresa_id(
     empresa_id: int, request: Request, db: Session = Depends(get_db)
 ):
     request_info = get_request_info(request)
-    logger.info(f"Obteniendo facturas para la empresa con ID: {empresa_id}", extra=request_info)
+    logger.info(
+        f"Obteniendo facturas para la empresa con ID: {empresa_id}", extra=request_info
+    )
     facturas = get_documentos_by_empresa_id(db, empresa_id)
     if not facturas:
         logger.warning(
@@ -77,7 +81,9 @@ def get_facturas_by_cliente_id(
     cliente_id: int, request: Request, db: Session = Depends(get_db)
 ):
     request_info = get_request_info(request)
-    logger.info(f"Obteniendo facturas para el cliente con ID: {cliente_id}", extra=request_info)
+    logger.info(
+        f"Obteniendo facturas para el cliente con ID: {cliente_id}", extra=request_info
+    )
     facturas = get_documentos_by_cliente_id(db, cliente_id)
     if not facturas:
         logger.warning(
@@ -96,34 +102,17 @@ def fetch_iva_by_factura_id(
     factura_id: int, request: Request, db: Session = Depends(get_db)
 ):
     request_info = get_request_info(request)
-    logger.info(f"Obteniendo IVA para la factura con ID: {factura_id}", extra=request_info)
+    logger.info(
+        f"Obteniendo IVA para la factura con ID: {factura_id}", extra=request_info
+    )
     iva = get_iva_by_factura_id(db, factura_id)
     if not iva:
         logger.warning(
-            f"IVA no encontrado para la factura con ID: {factura_id}", extra=request_info
+            f"IVA no encontrado para la factura con ID: {factura_id}",
+            extra=request_info,
         )
         raise HTTPException(status_code=404, detail="IVA no encontrado para la factura")
     return iva
-
-
-@router.get("/{factura_id}/operaciones")
-def fetch_operaciones_by_factura_id(
-    factura_id: int, request: Request, db: Session = Depends(get_db)
-):
-    request_info = get_request_info(request)
-    logger.info(
-        f"Obteniendo operaciones para la factura con ID: {factura_id}", extra=request_info
-    )
-    operaciones = get_operaciones_by_factura_id(db, factura_id)
-    if not operaciones:
-        logger.warning(
-            f"Operaciones no encontradas para la factura con ID: {factura_id}",
-            extra=request_info,
-        )
-        raise HTTPException(
-            status_code=404, detail="Operaciones no encontradas para la factura"
-        )
-    return operaciones
 
 
 @router.get("/{factura_id}/detalles")
@@ -152,12 +141,14 @@ def fetch_pedido_by_factura_id(
 ):
     request_info = get_request_info(request)
     logger.info(
-        f"Obteniendo pedido asociado a la factura con ID: {factura_id}", extra=request_info
+        f"Obteniendo pedido asociado a la factura con ID: {factura_id}",
+        extra=request_info,
     )
     pedido = get_pedido_by_factura_id(db, factura_id)
     if not pedido:
         logger.warning(
-            f"Pedido no encontrado para la factura con ID: {factura_id}", extra=request_info
+            f"Pedido no encontrado para la factura con ID: {factura_id}",
+            extra=request_info,
         )
         raise HTTPException(
             status_code=404, detail="Pedido no encontrado para la factura"
