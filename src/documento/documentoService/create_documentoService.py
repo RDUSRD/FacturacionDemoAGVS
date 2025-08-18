@@ -1,6 +1,7 @@
 # region Imports
 from datetime import datetime
 import os
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -63,7 +64,8 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
 
             # Obtener el precio del BCV
             precio_bcv = pedido.tasa_cambio
-            if not isinstance(precio_bcv, (int, float)) or precio_bcv <= 0:
+            # Ajustar la validación para aceptar valores de tipo Decimal
+            if not isinstance(precio_bcv, (int, float, Decimal)) or precio_bcv <= 0:
                 raise ValueError("El precio del BCV no es válido.")
 
             # Crear la factura
@@ -86,6 +88,7 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
 
             # Calcular totales e impuestos
             totales = calcular_totales(pedido.detalles, factura.aplica_igtf, precio_bcv)
+            print(f"Totales calculados: {totales}")
 
             # Crear detalles de factura
             for detalle_pedido in pedido.detalles:
@@ -99,9 +102,17 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                 )
                 db.add(detalle_factura)
 
-            # Crear impuestos
+            # Calcular el valor de 'base' como la suma de las bases gravadas
+            base_total = (
+                totales["monto_base_general"]
+                + totales["monto_base_reducida"]
+                + totales["monto_base_adicional"]
+            )
+
+            # Crear impuestos con el valor calculado de 'base'
             impuesto = iva(
                 factura_id=factura.factura_id,
+                base=base_total,  # Asignar el valor calculado de 'base'
                 monto_exento=totales["monto_exento"],
                 monto_base_general=totales["monto_base_general"],
                 monto_base_reducida=totales["monto_base_reducida"],
@@ -125,6 +136,13 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                 print(f"Respuesta de la API de imprenta: {respuesta_imprenta}")
                 if "error" in respuesta_imprenta:
                     print(f"Error al enviar a imprenta: {respuesta_imprenta['error']}")
+
+            # Actualizamos factura con mas datos
+            factura.total = totales.get("monto_total", 0)
+            factura.descuento_total = totales.get("descuento_total", 0)
+            factura.monto_igtf = totales.get("monto_igtf", 0)
+            factura.monto_dolares = totales.get("monto_dolares", 0)
+            # No es necesario llamar a update, los cambios se reflejan automáticamente al confirmar la transacción
 
             # Actualizar el estado del pedido
             pedido.estado = "procesado"
@@ -197,7 +215,8 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
 
             # Obtener el precio del BCV
             precio_bcv = obtener_dolar_bcv(db)
-            if not isinstance(precio_bcv, (int, float)) or precio_bcv <= 0:
+            # Ajustar la validación para aceptar valores de tipo Decimal
+            if not isinstance(precio_bcv, (int, float, Decimal)) or precio_bcv <= 0:
                 raise ValueError("El precio del BCV no es válido.")
 
             # Inicializar variables para ajustes globales
@@ -372,7 +391,8 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
 
             # Obtener el precio del BCV
             precio_bcv = obtener_dolar_bcv(db)
-            if not isinstance(precio_bcv, (int, float)) or precio_bcv <= 0:
+            # Ajustar la validación para aceptar valores de tipo Decimal
+            if not isinstance(precio_bcv, (int, float, Decimal)) or precio_bcv <= 0:
                 raise ValueError("El precio del BCV no es válido.")
 
             # Inicializar variables para ajustes globales

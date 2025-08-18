@@ -14,7 +14,7 @@ def obtener_precio_bcv():
         data = response.json()
 
         # Obtener el promedio y la fecha de actualización
-        promedio = round(data["promedio"], 2)  # Redondear a 2 decimales
+        promedio = round(data["promedio"], 4)  # Redondear a 4 decimales
         fecha_actualizacion = data["fechaActualizacion"]
 
         # Imprimir la fecha de actualización

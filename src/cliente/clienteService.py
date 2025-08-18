@@ -12,14 +12,14 @@ def get_cliente_by_id(db: Session, cliente_id: int):
 
 
 def get_or_create_cliente(db: Session, cliente_data: ClienteSchema):
-    cliente = db.query(Cliente).filter(Cliente.rif == cliente_data.rif).first()
+    cliente = db.query(Cliente).filter(Cliente.documento == cliente_data.documento).first()
     if not cliente:
         cliente = Cliente(**cliente_data.model_dump())
         db.add(cliente)
         db.commit()
         db.refresh(cliente)
         return cliente
-    return {"message": "Cliente ya existe " + cliente.rif, "cliente": cliente}
+    return {"message": "Cliente ya existe " + cliente.documento, "cliente": cliente}
 
 
 def update_cliente(db: Session, cliente_id: int, cliente_data: ClienteUpdateSchema):

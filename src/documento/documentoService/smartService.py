@@ -1,10 +1,10 @@
 # Función para generar el JSON para la API de imprenta digital
 import os
 import requests
-from cliente.clienteSchema import ClienteSchema
-from documento.factura.facModel import Factura
-from documento.factura.iva.ivaModel import iva
-from empresa.empresaSchema import EmpresaSchema
+from src.cliente.clienteSchema import ClienteSchema
+from src.documento.factura.facModel import Factura
+from src.documento.factura.iva.ivaModel import iva
+from src.empresa.empresaSchema import EmpresaSchema
 
 SEND_EMAIL_SMART = os.getenv("SEND_EMAIL_SMART")
 

@@ -21,6 +21,9 @@ class PedidoSchema(BaseModel):
         description="La tasa de cambio debe ser mayor o igual a 0",
         example=1.00,
     )
+    observaciones: Optional[str] = Field(
+        None, description="Observaciones del pedido", example="Pedido urgente"
+    )
     detalles_pedido: Optional[list] = Field(
         None,
         description="Detalles del pedido",

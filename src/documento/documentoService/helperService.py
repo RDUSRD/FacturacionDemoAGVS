@@ -1,12 +1,12 @@
-# region Helpers
 # Función para manejar rollback manual
 from decimal import Decimal
-from pydoc import text
 from requests import Session
-from documento.factura.detalleFactura.detalleFacturaModel import DetalleFactura
-from documento.factura.facModel import Factura
-from documento.factura.iva.ivaModel import iva
-from documento.notas.notaModel import NotaCredito, NotaDebito
+from sqlalchemy.sql import text
+
+from src.documento.factura.detalleFactura.detalleFacturaModel import DetalleFactura
+from src.documento.factura.facModel import Factura
+from src.documento.factura.iva.ivaModel import iva
+from src.documento.notas.notaModel import NotaCredito, NotaDebito
 
 
 def rollback_manual(db: Session, factura_id: int):
@@ -36,7 +36,12 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
     monto_base_reducida = 0
     monto_base_adicional = 0
     descuento_total = 0
+    iva_general_monto = 0
+    iva_reducida_monto = 0
+    iva_adicional_monto = 0
 
+    # Revisar y ajustar la lógica de cálculo en calcular_totales
+    # Ajustar la lógica para calcular el IVA correctamente
     for detalle in detalles:
         if not (0 <= (detalle.descuento or 0) <= 1):
             raise ValueError(
@@ -45,24 +50,22 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
 
         total_producto = detalle.cantidad * detalle.precio_unitario
 
-        # Calcular IVA antes de aplicar el descuento
+        # Calcular IVA sobre el total del producto sin descuento
         if detalle.producto.exento:
             monto_exento += total_producto
         elif detalle.alicuota_iva == 16:
-            monto_base_general += total_producto
+            monto_base_general += total_producto  # Base sin descuento
+            iva_general_monto += round((total_producto - (total_producto * (detalle.descuento or 0))) * Decimal("0.16"), 4)
         elif detalle.alicuota_iva == 8:
-            monto_base_reducida += total_producto
+            monto_base_reducida += total_producto  # Base sin descuento
+            iva_reducida_monto += round((total_producto - (total_producto * (detalle.descuento or 0))) * Decimal("0.08"), 4)
         elif detalle.alicuota_iva == 15:
-            monto_base_adicional += total_producto
+            monto_base_adicional += total_producto  # Base sin descuento
+            iva_adicional_monto += round((total_producto - (total_producto * (detalle.descuento or 0))) * Decimal("0.15"), 4)
 
-        # Aplicar descuento después de calcular el IVA
+        # Aplicar descuento al total del producto
         descuento_producto = total_producto * (detalle.descuento or 0)
         descuento_total += descuento_producto
-
-    # Calcular IVA basado en las bases acumuladas
-    iva_general_monto = round(monto_base_general * Decimal("0.16"), 4)
-    iva_reducida_monto = round(monto_base_reducida * Decimal("0.08"), 4)
-    iva_adicional_monto = round(monto_base_adicional * Decimal("0.15"), 4)
 
     # Calcular el monto total sumando las bases, IVA y restando descuentos
     monto_total = (
@@ -73,7 +76,6 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
         + monto_base_adicional
         + iva_adicional_monto
         + monto_exento
-        - descuento_total
     )
 
     # Calcular IGTF si aplica
@@ -94,6 +96,7 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
         "iva_reducida_monto": max(iva_reducida_monto, 0),
         "iva_adicional_monto": max(iva_adicional_monto, 0),
         "monto_igtf": max(monto_igtf, 0),
+        "monto_dolares": max(monto_total / precio_bcv, 0) if precio_bcv else 0,
         "monto_total": max(monto_total + monto_igtf, 0),
     }
 
@@ -110,13 +113,13 @@ def parse_factura(factura: Factura, totales: dict) -> dict:
         "fecha_emision": factura.fecha_emision,
         "hora_emision": factura.hora_emision,
         "aplica_igtf": factura.aplica_igtf,
-        "monto_dolares": totales.get("monto_base", 0) + totales.get("monto_exento", 0),
+        "monto_dolares": totales.get("monto_total", 0) / totales.get("precio_bcv", 1),
         "descuento_total": totales.get("descuento_total", 0),
-        "total": totales.get("monto_base", 0)
-        + totales.get("iva_monto", 0)
-        + totales.get("monto_exento", 0)
-        + totales.get("monto_igtf", 0),
+        "total": totales.get("monto_total", 0),
         "monto_igtf": totales.get("monto_igtf", 0),
+        "iva_general_monto": totales.get("iva_general_monto", 0),
+        "iva_reducida_monto": totales.get("iva_reducida_monto", 0),
+        "iva_adicional_monto": totales.get("iva_adicional_monto", 0),
     }
 
 
@@ -196,6 +199,3 @@ def obtener_siguiente_id_nota_debito(db: Session):
         .first()
     )
     return (ultimo_nota_debito_id[0] + 1) if ultimo_nota_debito_id else 1
-
-
-# endregion

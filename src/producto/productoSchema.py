@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
 
@@ -67,12 +67,11 @@ class ProductoSchema(BaseModel):
             }
         }
 
-    @model_validator(pre=True)
-    def validate_alicuota_iva(cls, values):
-        alicuota = values.get("alicuota_iva")
-        if alicuota not in {8.0, 16.0, 15.0}:
+    @field_validator("alicuota_iva")
+    def validate_alicuota_iva(cls, value):
+        if value not in {8.0, 16.0, 15.0}:
             raise ValueError("La alícuota de IVA debe ser 8.0, 16.0 o 15.0.")
-        return values
+        return value
 
 
 class ProductoUpdateSchema(BaseModel):
@@ -142,9 +141,8 @@ class ProductoUpdateSchema(BaseModel):
             }
         }
 
-    @model_validator(pre=True)
-    def validate_alicuota_iva(cls, values):
-        alicuota = values.get("alicuota_iva")
-        if alicuota not in {8.0, 16.0, 15.0}:
+    @field_validator("alicuota_iva")
+    def validate_alicuota_iva(cls, value):
+        if value not in {8.0, 16.0, 15.0}:
             raise ValueError("La alícuota de IVA debe ser 8.0, 16.0 o 15.0.")
-        return values
+        return value
