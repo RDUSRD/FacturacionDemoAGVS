@@ -13,11 +13,13 @@ The Facturación System is a FastAPI-based application designed to manage invoic
 - **Advanced Logging**: Custom logger with rotating file handlers and detailed request information.
 
 ## Recent Updates
-- **Version 0.5.3**:
-  - Fixed issues with `get_nota_debito_by_id` and `get_nota_credito_by_id` to use the correct primary keys (`nota_debito_id` and `nota_credito_id`).
-  - Enhanced logging for debit and credit note routes to include detailed request information.
-  - Updated middleware to ensure proper handling of group-based route protection.
-  - Improved error handling and logging for better debugging.
+- **Version 0.5.4**:
+  - Adjusted `calcular_totales` to ensure IVA is calculated on the total product price without discounts and discounts are applied afterward.
+  - Fixed IGTF calculation to use 0.03% instead of 3%.
+  - Updated `parse_factura` to correctly calculate `monto_dolares` and ensure accurate invoice parsing.
+  - Replaced `db.update` with direct attribute modification for SQLAlchemy session tracking.
+  - Improved error handling for unexpected session attribute issues.
+  - New enviroments variables
 
 ## Dependencies
 The project requires the following Python packages:
@@ -47,6 +49,27 @@ The application uses the following environment variables:
 - `AUTHENTIK_REDIRECT_URI`: Redirect URI for OAuth.
 - `AUTHENTIK_JWKS_URL`: JWKS URL for Authentik.
 - `SESSION_SECRET_KEY`: Secret key for session management.
+- `AUTHENTIK_LOGOUT_URL`: Logout URL for Authentik.
+- `SEND_EMAIL_SMART`: Flag to send email via SMART.
+- `POST_SMART`: Flag to enable SMART POST requests.
+- `SMART_URL`: Base URL for SMART API.
+- `RESET_DB`: Flag to reset the database.
+
+**Example:**
+```env
+SQLALCHEMY_DATABASE_URL=postgresql://user:password@localhost:5432/mydatabase
+AUTHENTIK_URL=https://auth.example.com
+AUTHENTIK_CLIENT_ID=example_client_id
+AUTHENTIK_CLIENT_SECRET=example_client_secret
+AUTHENTIK_REDIRECT_URI=http://localhost:8000/oauth/callback
+AUTHENTIK_JWKS_URL=https://example.com/application/jwks/
+SESSION_SECRET_KEY=example_secret_key
+AUTHENTIK_LOGOUT_URL=https://example.com/application/end-session/
+SEND_EMAIL_SMART=false
+POST_SMART=false
+SMART_URL=http://example.com/api
+RESET_DB=false
+```
 
 ## Logger Configuration
 - Logs are stored in the `logs/` directory.
