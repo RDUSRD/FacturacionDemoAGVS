@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ClienteSchema(BaseModel):
@@ -9,11 +9,28 @@ class ClienteSchema(BaseModel):
         description="El nombre debe tener entre 3 y 255 caracteres",
         example="Cliente XYZ",
     )
-    rif: str = Field(
+    documento: str = Field(
         ...,
-        pattern=r"^[JGVE]-\d{8}-\d$",
-        description="El RIF debe tener el formato correcto",
-        example="J-12345678-9",
+        description="Número de documento del cliente",
+        example="12345678",
+    )
+    tipo_documento: str = Field(
+        ...,
+        description="Tipo de documento, por ejemplo 'V', 'E', 'J', 'G'",
+        example="V",
+    )
+    telefono: str = Field(
+        ...,
+        min_length=7,
+        max_length=20,
+        description="El teléfono debe ser válido",
+        example="0412-3456789",
+    )
+    email: str = Field(
+        ...,
+        max_length=100,
+        description="El correo electrónico debe ser válido",
+        example="cliente@ejemplo.com",
     )
     domicilio_fiscal: str = Field(
         ...,
@@ -27,7 +44,10 @@ class ClienteSchema(BaseModel):
         json_schema_extra = {
             "example": {
                 "nombre": "Cliente XYZ",
-                "rif": "J-12345678-9",
+                "documento": "12345678",
+                "tipo_documento": "V",
+                "telefono": "0412-3456789",
+                "email": "cliente@ejemplo.com",
                 "domicilio_fiscal": "Av. Principal, Edificio XYZ, Caracas",
             }
         }
@@ -41,11 +61,28 @@ class ClienteUpdateSchema(BaseModel):
         description="El nombre debe tener entre 3 y 255 caracteres",
         example="Cliente XYZ",
     )
-    rif: str = Field(
+    documento: str = Field(
         None,
-        pattern=r"^[JGVE]-\d{8}-\d$",
-        description="El RIF debe tener el formato correcto",
-        example="J-12345678-9",
+        description="Número de documento del cliente",
+        example="123456789",
+    )
+    tipo_documento: str = Field(
+        None,
+        description="Tipo de documento, por ejemplo 'V', 'E', 'J', 'G'",
+        example="V",
+    )
+    telefono: str = Field(
+        None,
+        min_length=7,
+        max_length=20,
+        description="El teléfono debe ser válido",
+        example="0412-3456789",
+    )
+    email: str = Field(
+        None,
+        max_length=100,
+        description="El correo electrónico debe ser válido",
+        example="cliente@ejemplo.com",
     )
     domicilio_fiscal: str = Field(
         None,
@@ -65,7 +102,10 @@ class ClienteUpdateSchema(BaseModel):
         json_schema_extra = {
             "example": {
                 "nombre": "Cliente XYZ",
-                "rif": "J-12345678-9",
+                "documento": "12345678",
+                "tipo_documento": "V",
+                "telefono": "0412-3456789",
+                "email": "cliente@ejemplo.com",
                 "domicilio_fiscal": "Av. Principal, Edificio XYZ, Caracas",
             }
         }

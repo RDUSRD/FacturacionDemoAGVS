@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional
 
 
@@ -35,6 +35,11 @@ class ProductoSchema(BaseModel):
         description="El código QR debe ser único",
         example="QR123456789",
     )
+    alicuota_iva: float = Field(
+        ...,
+        description="Porcentaje de IVA aplicado al producto (solo 8.0, 16.0 o 15.0, dependiendo de la clasificación del producto)",
+        example=16.0,
+    )
     exento: bool = Field(
         False,
         description="Indica si el producto está exento de impuestos",
@@ -56,10 +61,18 @@ class ProductoSchema(BaseModel):
                 "precio": 50.0,
                 "status": "activo",
                 "stock": 100,
+                "alicuota_iva": 16.0,
                 "exento": False,
                 "descuento": 0.1,  # Representa un 10% de descuento
             }
         }
+
+    @model_validator(pre=True)
+    def validate_alicuota_iva(cls, values):
+        alicuota = values.get("alicuota_iva")
+        if alicuota not in {8.0, 16.0, 15.0}:
+            raise ValueError("La alícuota de IVA debe ser 8.0, 16.0 o 15.0.")
+        return values
 
 
 class ProductoUpdateSchema(BaseModel):
@@ -97,6 +110,11 @@ class ProductoUpdateSchema(BaseModel):
         description="El código QR debe ser único",
         example="QR123456789",
     )
+    alicuota_iva: Optional[float] = Field(
+        None,
+        description="Porcentaje de IVA aplicado al producto (solo 8.0, 16.0 o 15.0, dependiendo de la clasificación del producto)",
+        example=16.0,
+    )
     exento: Optional[bool] = Field(
         None,
         description="Indica si el producto está exento de impuestos",
@@ -118,7 +136,15 @@ class ProductoUpdateSchema(BaseModel):
                 "precio": 50.0,
                 "status": "activo",
                 "stock": 100,
+                "alicuota_iva": 16.0,
                 "exento": False,
                 "descuento": 0.1,  # Representa un 10% de descuento
             }
         }
+
+    @model_validator(pre=True)
+    def validate_alicuota_iva(cls, values):
+        alicuota = values.get("alicuota_iva")
+        if alicuota not in {8.0, 16.0, 15.0}:
+            raise ValueError("La alícuota de IVA debe ser 8.0, 16.0 o 15.0.")
+        return values

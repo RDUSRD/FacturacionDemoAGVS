@@ -13,6 +13,7 @@ class Producto(Base):
     stock = Column(Integer, nullable=False, default=0)
     codigo_barras = Column(String(100), unique=True, nullable=True)
     codigo_QR = Column(String(100), unique=True, nullable=True)
+    alicuota_iva = Column(DECIMAL(5, 2), nullable=False, default=16.0)  # Porcentaje de IVA
     exento = Column(Boolean, default=False)
     descuento = Column(DECIMAL(10, 2), nullable=True, default=0.0)
 

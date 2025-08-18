@@ -5,7 +5,7 @@ from src.cliente.clienteService import get_cliente_by_id
 from src.empresa.empresaService import get_empresa_by_id
 from src.pedidos.detallePedido.detallePedidoModel import DetallePedido
 from src.producto.prodModel import Producto
-from src.monedas.monedasService import get_tasa_cambio_actual
+from src.monedas.dolar.dolarService import get_tasa_cambio_actual
 
 
 # Create a new Pedido
@@ -20,7 +20,7 @@ def create_pedido(db: Session, pedido_data: PedidoSchema):
         empresa = get_empresa_by_id(db, pedido_data.empresa_id)
         if not empresa:
             raise ValueError("La empresa especificada no existe.")
-        
+
         # Get the current value of tasa_cambio
         tasa_cambio = get_tasa_cambio_actual(db)
 
@@ -98,7 +98,9 @@ def create_pedido(db: Session, pedido_data: PedidoSchema):
                 "cantidad": detalle.cantidad,
                 "precio_unitario": float(detalle.precio_unitario),
                 "descuento": float(detalle.descuento) if detalle.descuento else None,
-                "alicuota_iva": float(detalle.alicuota_iva) if detalle.alicuota_iva else None,
+                "alicuota_iva": (
+                    float(detalle.alicuota_iva) if detalle.alicuota_iva else None
+                ),
                 "total": float(detalle.total),
             }
             for detalle in detalles_pedido
