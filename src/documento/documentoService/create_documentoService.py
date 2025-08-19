@@ -88,7 +88,6 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
 
             # Calcular totales e impuestos
             totales = calcular_totales(pedido.detalles, factura.aplica_igtf, precio_bcv)
-            print(f"Totales calculados: {totales}")
 
             # Crear detalles de factura
             for detalle_pedido in pedido.detalles:
@@ -101,25 +100,26 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                     total=detalle_pedido.cantidad * detalle_pedido.precio_unitario,
                 )
                 db.add(detalle_factura)
-
-            # Calcular el valor de 'base' como la suma de las bases gravadas
-            base_total = (
-                totales["monto_base_general"]
-                + totales["monto_base_reducida"]
-                + totales["monto_base_adicional"]
-            )
-
+                
             # Crear impuestos con el valor calculado de 'base'
             impuesto = iva(
                 factura_id=factura.factura_id,
-                base=base_total,  # Asignar el valor calculado de 'base'
+                subtotal_descuento=totales["subtotal_descuento"],
+                subtotal_sin_descuento=totales["subtotal_sin_descuento"],
+                base=totales["monto_base"],  # Asignar el valor calculado de 'base'
                 monto_exento=totales["monto_exento"],
                 monto_base_general=totales["monto_base_general"],
                 monto_base_reducida=totales["monto_base_reducida"],
                 monto_base_adicional=totales["monto_base_adicional"],
                 iva_general=totales["iva_general"],
+                iva_general_monto=totales["iva_general_monto"],
                 iva_reducida=totales["iva_reducida"],
+                iva_reducida_monto=totales["iva_reducida_monto"],
                 iva_adicional=totales["iva_adicional"],
+                iva_adicional_monto=totales["iva_adicional_monto"],
+                base_igtf=totales["base_igtf"],
+                igtf=totales["igtf"],
+                monto_igtf=totales["monto_igtf"],
                 monto=totales["monto_total"],
             )
             db.add(impuesto)
@@ -129,18 +129,32 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                 cliente = get_cliente_by_id(db, factura.cliente_id)
                 empresa = get_empresa_by_id(db, factura.empresa_id)
                 json_imprenta = generar_json_imprenta(
-                    factura, pedido.detalles, cliente, empresa, impuesto, precio_bcv, 1
+                    factura, pedido.detalles, cliente, empresa, impuesto, precio_bcv, 1, pedido.id
                 )
-                url_facturacion = f"{SMART_URL}/facturacion"  # URL de ejemplo, ajusta según sea necesario
+                url_facturacion = f"{SMART_URL}/facturacion"
                 respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_facturacion)
                 print(f"Respuesta de la API de imprenta: {respuesta_imprenta}")
-                if "error" in respuesta_imprenta:
-                    print(f"Error al enviar a imprenta: {respuesta_imprenta['error']}")
+
+                if "success" in respuesta_imprenta and respuesta_imprenta["success"]:
+                    # Actualizar los campos con los datos de la respuesta
+                    factura.numero_control = respuesta_imprenta["data"]["numerodocumento"]
+                    factura.fecha_numero_control = datetime.strptime(
+                        respuesta_imprenta["data"]["fecha"], "%Y%m%d"
+                    ).date()
+                    factura.hora_numero_control = datetime.strptime(
+                        respuesta_imprenta["data"]["hora"], "%H:%M:%S"
+                    ).time()
+                    factura.url_pdf = respuesta_imprenta["data"]["urlpdf"]
+                else:
+                    error_message = respuesta_imprenta.get("error", {}).get("message", "Desconocido")
+                    print(f"Error al enviar a imprenta: {error_message}, {respuesta_imprenta.get('data', {})}")
+                    rollback_manual(db, factura.factura_id)  # Realizar rollback en caso de error
+                    raise ValueError(f"Error al enviar a imprenta: {error_message}")
+
 
             # Actualizamos factura con mas datos
             factura.total = totales.get("monto_total", 0)
             factura.descuento_total = totales.get("descuento_total", 0)
-            factura.monto_igtf = totales.get("monto_igtf", 0)
             factura.monto_dolares = totales.get("monto_dolares", 0)
             # No es necesario llamar a update, los cambios se reflejan automáticamente al confirmar la transacción
 

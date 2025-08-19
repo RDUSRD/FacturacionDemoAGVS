@@ -31,6 +31,8 @@ def validar_existencia(db: Session, modelo, id, nombre_entidad):
 
 # Función para calcular totales e impuestos
 def calcular_totales(detalles, aplica_igtf, precio_bcv):
+    subtotal_total_sin_descuento = 0
+    subtotal_total_descuento = 0
     monto_exento = 0
     monto_base_general = 0
     monto_base_reducida = 0
@@ -50,18 +52,25 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
 
         total_producto = detalle.cantidad * detalle.precio_unitario
 
+        # Calcular el subtotal del producto
+        subtotal_producto = total_producto - (total_producto * (detalle.descuento or 0))
+        subtotal_total_descuento += subtotal_producto
+
+        # Calcular el subtotal del producto sin descuento
+        subtotal_total_sin_descuento += total_producto
+
         # Calcular IVA sobre el total del producto sin descuento
         if detalle.producto.exento:
             monto_exento += total_producto
         elif detalle.alicuota_iva == 16:
             monto_base_general += total_producto  # Base sin descuento
-            iva_general_monto += round((total_producto - (total_producto * (detalle.descuento or 0))) * Decimal("0.16"), 4)
+            iva_general_monto += round(total_producto * Decimal("0.16"), 4)
         elif detalle.alicuota_iva == 8:
             monto_base_reducida += total_producto  # Base sin descuento
-            iva_reducida_monto += round((total_producto - (total_producto * (detalle.descuento or 0))) * Decimal("0.08"), 4)
+            iva_reducida_monto += round(total_producto * Decimal("0.08"), 4)
         elif detalle.alicuota_iva == 15:
             monto_base_adicional += total_producto  # Base sin descuento
-            iva_adicional_monto += round((total_producto - (total_producto * (detalle.descuento or 0))) * Decimal("0.15"), 4)
+            iva_adicional_monto += round(total_producto * Decimal("0.15"), 4)
 
         # Aplicar descuento al total del producto
         descuento_producto = total_producto * (detalle.descuento or 0)
@@ -84,20 +93,27 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
         monto_igtf = round(monto_total * Decimal("0.03"), 2)
 
     return {
-        "monto_exento": max(monto_exento, 0),
-        "monto_base_general": max(monto_base_general, 0),
-        "monto_base_reducida": max(monto_base_reducida, 0),
-        "monto_base_adicional": max(monto_base_adicional, 0),
-        "descuento_total": max(descuento_total, 0),
+        "subtotal_descuento": round(float(max(subtotal_total_descuento, 0)), 4),
+        "subtotal_sin_descuento": round(float(max(subtotal_total_sin_descuento, 0)), 4),
+        "monto_base": round(float(max(
+            monto_base_general + monto_base_reducida + monto_base_adicional, 0)
+        ), 4),
+        "monto_exento": round(float(max(monto_exento, 0)), 4),
+        "monto_base_general": round(float(max(monto_base_general, 0)), 4),
+        "monto_base_reducida": round(float(max(monto_base_reducida, 0)), 4),
+        "monto_base_adicional": round(float(max(monto_base_adicional, 0)), 4),
+        "descuento_total": round(float(max(descuento_total, 0)), 4),
         "iva_general": 16,  # Porcentaje de IVA general
         "iva_reducida": 8,  # Porcentaje de IVA reducida
         "iva_adicional": 15,  # Porcentaje de IVA adicional
-        "iva_general_monto": max(iva_general_monto, 0),
-        "iva_reducida_monto": max(iva_reducida_monto, 0),
-        "iva_adicional_monto": max(iva_adicional_monto, 0),
-        "monto_igtf": max(monto_igtf, 0),
-        "monto_dolares": max(monto_total / precio_bcv, 0) if precio_bcv else 0,
-        "monto_total": max(monto_total + monto_igtf, 0),
+        "iva_general_monto": round(float(max(iva_general_monto, 0)), 4),
+        "iva_reducida_monto": round(float(max(iva_reducida_monto, 0)), 4),
+        "iva_adicional_monto": round(float(max(iva_adicional_monto, 0)), 4),
+        "igtf": 3,
+        "base_igtf": round(float(max(monto_total, 0)), 4),  # Base para calculo del igtf
+        "monto_igtf": round(float(max(monto_igtf, 0)), 4),
+        "monto_dolares": round(float(max(monto_total / precio_bcv, 0)), 4) if precio_bcv else 0,
+        "monto_total": round(float(max(monto_total + monto_igtf, 0)), 4),
     }
 
 
@@ -113,13 +129,13 @@ def parse_factura(factura: Factura, totales: dict) -> dict:
         "fecha_emision": factura.fecha_emision,
         "hora_emision": factura.hora_emision,
         "aplica_igtf": factura.aplica_igtf,
-        "monto_dolares": totales.get("monto_total", 0) / totales.get("precio_bcv", 1),
-        "descuento_total": totales.get("descuento_total", 0),
-        "total": totales.get("monto_total", 0),
-        "monto_igtf": totales.get("monto_igtf", 0),
-        "iva_general_monto": totales.get("iva_general_monto", 0),
-        "iva_reducida_monto": totales.get("iva_reducida_monto", 0),
-        "iva_adicional_monto": totales.get("iva_adicional_monto", 0),
+        "monto_dolares": round(float(totales.get("monto_total", 0) / totales.get("precio_bcv", 1)), 4),
+        "descuento_total": round(float(totales.get("descuento_total", 0)), 4),
+        "total": round(float(totales.get("monto_total", 0)), 4),
+        "monto_igtf": round(float(totales.get("monto_igtf", 0)), 4),
+        "iva_general_monto": round(float(totales.get("iva_general_monto", 0)), 4),
+        "iva_reducida_monto": round(float(totales.get("iva_reducida_monto", 0)), 4),
+        "iva_adicional_monto": round(float(totales.get("iva_adicional_monto", 0)), 4),
     }
 
 
@@ -135,7 +151,7 @@ def parse_nota_credito(nota_credito: NotaCredito) -> dict:
         "factura_id": nota_credito.factura_id,
         "fecha_emision": nota_credito.fecha_emision,
         "hora_emision": nota_credito.hora_emision,
-        "monto_credito": nota_credito.monto_credito,
+        "monto_credito": round(float(nota_credito.monto_credito), 4),
         "descripcion": nota_credito.descripcion,
         "modif_documento": nota_credito.modif_documento,
         "modif_detalles": nota_credito.modif_detalles,
@@ -154,7 +170,7 @@ def parse_nota_debito(nota_debito: NotaDebito) -> dict:
         "factura_id": nota_debito.factura_id,
         "fecha_emision": nota_debito.fecha_emision,
         "hora_emision": nota_debito.hora_emision,
-        "monto_debito": nota_debito.monto_debito,
+        "monto_debito": round(float(nota_debito.monto_debito), 4),
         "descripcion": nota_debito.descripcion,
         "modif_documento": nota_debito.modif_documento,
         "modif_detalles": nota_debito.modif_detalles,

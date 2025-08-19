@@ -30,9 +30,6 @@ class FacturaSchema(DocumentoSchema):
         example=[{"producto_id": 1, "cantidad": 2}],
     )
     aplica_igtf: bool = Field(..., description="Indica si aplica el IGTF", example=True)
-    monto_igtf: Optional[float] = Field(
-        None, ge=0, description="Monto del IGTF si aplica", example=20.0
-    )
     pedido_id: int = Field(
         ..., ge=1, description="El ID del pedido asociado a la factura", example=1
     )

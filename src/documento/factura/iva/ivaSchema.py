@@ -6,6 +6,13 @@ class IVASchema(BaseModel):
         ..., ge=0, description="Base imponible para el cálculo de IVA", example=800
     )
 
+    subtotal_descuento: float = Field(
+        ..., ge=0, description="Subtotal con descuento aplicado", example=800
+    )
+    subtotal_sin_descuento: float = Field(
+        ..., ge=0, description="Subtotal sin descuento aplicado", example=800
+    )
+
     monto_exento: float = Field(
         ..., ge=0, description="Monto exento de IVA", example=200
     )
@@ -25,13 +32,40 @@ class IVASchema(BaseModel):
     )
 
     iva_general: float = Field(
-        16, ge=0, description="Porcentaje de IVA aplicado para alícuota general (16%)", example=16
+        16,
+        ge=0,
+        description="Porcentaje de IVA aplicado para alícuota general (16%)",
+        example=16,
+    )
+    iva_general_monto: float = Field(
+        ...,
+        ge=0,
+        description="Monto de IVA aplicado para alícuota general (16%)",
+        example=80,
     )
     iva_reducida: float = Field(
-        8, ge=0, description="Porcentaje de IVA aplicado para alícuota reducida (8%)", example=8
+        8,
+        ge=0,
+        description="Porcentaje de IVA aplicado para alícuota reducida (8%)",
+        example=8,
+    )
+    iva_reducida_monto: float = Field(
+        ...,
+        ge=0,
+        description="Monto de IVA aplicado para alícuota reducida (8%)",
+        example=24,
     )
     iva_adicional: float = Field(
-        15, ge=0, description="Porcentaje de IVA aplicado para alícuota adicional (15%)", example=15
+        15,
+        ge=0,
+        description="Porcentaje de IVA aplicado para alícuota adicional (15%)",
+        example=15,
+    )
+    iva_adicional_monto: float = Field(
+        ...,
+        ge=0,
+        description="Monto de IVA aplicado para alícuota adicional (15%)",
+        example=15,
     )
 
     factura_id: int = Field(

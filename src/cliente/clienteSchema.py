@@ -45,7 +45,7 @@ class ClienteSchema(BaseModel):
             "example": {
                 "nombre": "Cliente XYZ",
                 "documento": "12345678",
-                "tipo_documento": "V",
+                "tipo_documento": "Cedula", # Cedula, Pasaporte, RIF
                 "telefono": "0412-3456789",
                 "email": "cliente@ejemplo.com",
                 "domicilio_fiscal": "Av. Principal, Edificio XYZ, Caracas",
