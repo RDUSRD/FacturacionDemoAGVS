@@ -121,6 +121,8 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
 def parse_factura(factura: Factura, totales: dict) -> dict:
     return {
         "id": factura.factura_id,
+        "factura_id": factura.factura_id,
+        "numero_control": factura.numero_control,
         "tipo_documento": factura.tipo_documento,
         "estado": factura.estado,
         "empresa_id": factura.empresa_id,

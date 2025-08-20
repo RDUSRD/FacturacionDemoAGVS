@@ -96,11 +96,12 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                     producto_id=detalle_pedido.producto_id,
                     cantidad=detalle_pedido.cantidad,
                     alicuota_iva=detalle_pedido.alicuota_iva,
+                    descuento=detalle_pedido.descuento,
                     precio_unitario=detalle_pedido.precio_unitario,
-                    total=detalle_pedido.cantidad * detalle_pedido.precio_unitario,
+                    total=detalle_pedido.total,
                 )
                 db.add(detalle_factura)
-                
+
             # Crear impuestos con el valor calculado de 'base'
             impuesto = iva(
                 factura_id=factura.factura_id,
@@ -129,15 +130,23 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                 cliente = get_cliente_by_id(db, factura.cliente_id)
                 empresa = get_empresa_by_id(db, factura.empresa_id)
                 json_imprenta = generar_json_imprenta(
-                    factura, pedido.detalles, cliente, empresa, impuesto, precio_bcv, 1, pedido.id
+                    factura,
+                    pedido.detalles,
+                    cliente,
+                    empresa,
+                    impuesto,
+                    precio_bcv,
+                    1,
+                    pedido.id,
                 )
                 url_facturacion = f"{SMART_URL}/facturacion"
                 respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_facturacion)
-                print(f"Respuesta de la API de imprenta: {respuesta_imprenta}")
 
                 if "success" in respuesta_imprenta and respuesta_imprenta["success"]:
                     # Actualizar los campos con los datos de la respuesta
-                    factura.numero_control = respuesta_imprenta["data"]["numerodocumento"]
+                    factura.numero_control = respuesta_imprenta["data"][
+                        "numerodocumento"
+                    ]
                     factura.fecha_numero_control = datetime.strptime(
                         respuesta_imprenta["data"]["fecha"], "%Y%m%d"
                     ).date()
@@ -145,12 +154,18 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                         respuesta_imprenta["data"]["hora"], "%H:%M:%S"
                     ).time()
                     factura.url_pdf = respuesta_imprenta["data"]["urlpdf"]
+                    factura.estado = "Procesado a imprenta"
                 else:
-                    error_message = respuesta_imprenta.get("error", {}).get("message", "Desconocido")
-                    print(f"Error al enviar a imprenta: {error_message}, {respuesta_imprenta.get('data', {})}")
-                    rollback_manual(db, factura.factura_id)  # Realizar rollback en caso de error
+                    error_message = respuesta_imprenta.get("error", {}).get(
+                        "message", "Desconocido"
+                    )
+                    print(
+                        f"Error al enviar a imprenta: {error_message}, {respuesta_imprenta.get('data', {})}"
+                    )
+                    rollback_manual(
+                        db, factura.factura_id
+                    )  # Realizar rollback en caso de error
                     raise ValueError(f"Error al enviar a imprenta: {error_message}")
-
 
             # Actualizamos factura con mas datos
             factura.total = totales.get("monto_total", 0)

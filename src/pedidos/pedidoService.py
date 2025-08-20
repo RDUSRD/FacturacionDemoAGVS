@@ -42,8 +42,8 @@ def create_pedido(db: Session, pedido_data: PedidoSchema):
             # Get the unit price of the product discount if applicable
             precio_unitario = producto.precio
             if producto.descuento:
-                descuento = producto.descuento
-            total_detalle = detalle_data["cantidad"] * precio_unitario
+                descuento = detalle_data['cantidad'] * precio_unitario * producto.descuento / 100 # Convert from % to bs
+            total_detalle = (detalle_data["cantidad"] * precio_unitario) - descuento
             total_pedido += total_detalle
 
             detalle_pedido = DetallePedido(
