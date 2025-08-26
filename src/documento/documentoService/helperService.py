@@ -68,9 +68,9 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
         elif detalle.alicuota_iva == 8:
             monto_base_reducida += total_producto  # Base sin descuento
             iva_reducida_monto += round(total_producto * Decimal("0.08"), 4)
-        elif detalle.alicuota_iva == 15:
+        elif detalle.alicuota_iva == 31:
             monto_base_adicional += total_producto  # Base sin descuento
-            iva_adicional_monto += round(total_producto * Decimal("0.15"), 4)
+            iva_adicional_monto += round(total_producto * Decimal("0.31"), 4)
 
         # Aplicar descuento al total del producto
         descuento_producto = total_producto * (detalle.descuento or 0)
@@ -95,9 +95,12 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
     return {
         "subtotal_descuento": round(float(max(subtotal_total_descuento, 0)), 4),
         "subtotal_sin_descuento": round(float(max(subtotal_total_sin_descuento, 0)), 4),
-        "monto_base": round(float(max(
-            monto_base_general + monto_base_reducida + monto_base_adicional, 0)
-        ), 4),
+        "monto_base": round(
+            float(
+                max(monto_base_general + monto_base_reducida + monto_base_adicional, 0)
+            ),
+            4,
+        ),
         "monto_exento": round(float(max(monto_exento, 0)), 4),
         "monto_base_general": round(float(max(monto_base_general, 0)), 4),
         "monto_base_reducida": round(float(max(monto_base_reducida, 0)), 4),
@@ -105,14 +108,18 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
         "descuento_total": round(float(max(descuento_total, 0)), 4),
         "iva_general": 16,  # Porcentaje de IVA general
         "iva_reducida": 8,  # Porcentaje de IVA reducida
-        "iva_adicional": 15,  # Porcentaje de IVA adicional
+        "iva_adicional": 31,  # Porcentaje de IVA adicional, Se cambio de 15% a 31%, ya que es la suma de iva general mas 15%.
         "iva_general_monto": round(float(max(iva_general_monto, 0)), 4),
         "iva_reducida_monto": round(float(max(iva_reducida_monto, 0)), 4),
         "iva_adicional_monto": round(float(max(iva_adicional_monto, 0)), 4),
         "igtf": 3,
         "base_igtf": round(float(max(monto_total, 0)), 4),  # Base para calculo del igtf
         "monto_igtf": round(float(max(monto_igtf, 0)), 4),
-        "monto_dolares": round(float(max(monto_total / precio_bcv, 0)), 4) if precio_bcv else 0,
+        "monto_dolares": (
+            round(float(max((monto_total + monto_igtf) / precio_bcv, 0)), 4)
+            if precio_bcv
+            else 0
+        ),
         "monto_total": round(float(max(monto_total + monto_igtf, 0)), 4),
     }
 
@@ -131,7 +138,9 @@ def parse_factura(factura: Factura, totales: dict) -> dict:
         "fecha_emision": factura.fecha_emision,
         "hora_emision": factura.hora_emision,
         "aplica_igtf": factura.aplica_igtf,
-        "monto_dolares": round(float(totales.get("monto_total", 0) / totales.get("precio_bcv", 1)), 4),
+        "monto_dolares": round(
+            float(totales.get("monto_total", 0) / totales.get("precio_bcv", 1)), 4
+        ),
         "descuento_total": round(float(totales.get("descuento_total", 0)), 4),
         "total": round(float(totales.get("monto_total", 0)), 4),
         "monto_igtf": round(float(totales.get("monto_igtf", 0)), 4),
@@ -157,6 +166,11 @@ def parse_nota_credito(nota_credito: NotaCredito) -> dict:
         "descripcion": nota_credito.descripcion,
         "modif_documento": nota_credito.modif_documento,
         "modif_detalles": nota_credito.modif_detalles,
+        "numero_control": nota_credito.numero_control,
+        "fecha_numero_control": nota_credito.fecha_numero_control,
+        "hora_numero_control": nota_credito.hora_numero_control,
+        "url_pdf": nota_credito.url_pdf,
+        "observacion": nota_credito.observacion,
     }
 
 
@@ -199,7 +213,7 @@ def obtener_siguiente_id_factura(db: Session):
     return (ultimo_factura_id[0] + 1) if ultimo_factura_id else 1
 
 
-# Función para obtener el siguiente ID disponible en la tabla nota_credito
+# Función para obtener el siguiente ID disponible in la tabla nota_credito
 def obtener_siguiente_id_nota_credito(db: Session):
     ultimo_nota_credito_id = (
         db.query(NotaCredito.nota_credito_id)
@@ -217,3 +231,108 @@ def obtener_siguiente_id_nota_debito(db: Session):
         .first()
     )
     return (ultimo_nota_debito_id[0] + 1) if ultimo_nota_debito_id else 1
+
+
+# Mover funciones relacionadas con notas de crédito y débito al helper
+def calcular_totales_nota(detalles_factura, modif_detalles, es_nota_debito=False):
+    """
+    Calcula los totales e impuestos para notas de crédito o débito basados en las modificaciones.
+    Si es una nota de débito, no se valida que el producto exista en los detalles de la factura.
+    """
+    subtotal_total_sin_descuento = 0
+    subtotal_total_descuento = 0
+    monto_exento = 0
+    monto_base_general = 0
+    monto_base_reducida = 0
+    monto_base_adicional = 0
+    iva_general_monto = 0
+    iva_reducida_monto = 0
+    iva_adicional_monto = 0
+
+    modificaciones_detalles = []
+
+    for mod_detalle in modif_detalles:
+        if not es_nota_debito:
+            detalle_existente = next(
+                (d for d in detalles_factura if d.producto_id == mod_detalle["id_producto"]),
+                None,
+            )
+            if not detalle_existente:
+                raise ValueError(
+                    f"Producto con ID {mod_detalle['id_producto']} no existe en los detalles de la factura."
+                )
+
+        cantidad_ajustada = float(mod_detalle.get("cantidad", 0))
+        precio_unitario_ajustado = float(mod_detalle.get("precio_unitario", 0))
+        descuento_ajustado = float(mod_detalle.get("descuento", 0))
+
+        total_producto = cantidad_ajustada * precio_unitario_ajustado
+        descuento_convertido = round(total_producto * descuento_ajustado, 4)
+        subtotal_producto = total_producto - descuento_convertido
+
+        subtotal_total_descuento += subtotal_producto
+        subtotal_total_sin_descuento += total_producto
+
+        if mod_detalle.get("exento", False):
+            monto_exento += subtotal_producto
+        else:
+            alicuota_iva = mod_detalle.get("alicuota_iva", 0)
+            if alicuota_iva == 16:
+                monto_base_general += subtotal_producto
+                iva_general_monto += round(subtotal_producto * Decimal("0.16"), 4)
+            elif alicuota_iva == 8:
+                monto_base_reducida += subtotal_producto
+                iva_reducida_monto += round(subtotal_producto * Decimal("0.08"), 4)
+            elif alicuota_iva == 31:
+                monto_base_adicional += subtotal_producto
+                iva_adicional_monto += round(subtotal_producto * Decimal("0.31"), 4)
+
+        modificaciones_detalles.append(
+            {
+                "producto_id": mod_detalle["id_producto"],
+                "cantidad": cantidad_ajustada,
+                "precio_unitario": precio_unitario_ajustado,
+                "descuento": descuento_convertido,
+                "alicuota_iva": mod_detalle.get("alicuota_iva", 0),
+                "exento": mod_detalle.get("exento", False),
+                "subtotal": subtotal_producto,
+                "total": subtotal_producto + iva_general_monto + iva_reducida_monto + iva_adicional_monto,
+            }
+        )
+
+    monto_total = (
+        monto_base_general
+        + iva_general_monto
+        + monto_base_reducida
+        + iva_reducida_monto
+        + monto_base_adicional
+        + iva_adicional_monto
+        + monto_exento
+    )
+
+    monto_igtf = round(monto_total * Decimal("0.03"), 2) if monto_total > 0 else 0
+
+    return {
+        "subtotal_descuento": round(float(max(subtotal_total_descuento, 0)), 4),
+        "subtotal_sin_descuento": round(float(max(subtotal_total_sin_descuento, 0)), 4),
+        "monto_base": round(
+            float(
+                max(monto_base_general + monto_base_reducida + monto_base_adicional, 0)
+            ),
+            4,
+        ),
+        "monto_exento": round(float(max(monto_exento, 0)), 4),
+        "monto_base_general": round(float(max(monto_base_general, 0)), 4),
+        "monto_base_reducida": round(float(max(monto_base_reducida, 0)), 4),
+        "monto_base_adicional": round(float(max(monto_base_adicional, 0)), 4),
+        "iva_general": 16,
+        "iva_reducida": 8,
+        "iva_adicional": 31,
+        "iva_general_monto": round(float(max(iva_general_monto, 0)), 4),
+        "iva_reducida_monto": round(float(max(iva_reducida_monto, 0)), 4),
+        "iva_adicional_monto": round(float(max(iva_adicional_monto, 0)), 4),
+        "base_igtf": round(float(max(monto_total, 0)), 4),
+        "igtf": 3,
+        "monto_igtf": round(float(max(monto_igtf, 0)), 4),
+        "monto_total": round(float(max(monto_total + monto_igtf, 0)), 4),
+    }, modificaciones_detalles
