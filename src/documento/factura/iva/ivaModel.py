@@ -8,8 +8,7 @@ class iva(Base):
     factura_id = Column(
         Integer, ForeignKey("factura.factura_id", ondelete="SET NULL"), nullable=True
     )
-    subtotal_sin_descuento = Column(Float, nullable=False)
-    subtotal_descuento = Column(Float, nullable=False)
+    subtotal_productos = Column(Float, nullable=False)  # suma de todos los productos
     base = Column(Float, nullable=False)  # suma de todas las bases
     monto_exento = Column(Float, nullable=False)
     monto = Column(Float, nullable=False)

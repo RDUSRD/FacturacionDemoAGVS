@@ -16,9 +16,29 @@ def rollback_manual(db: Session, factura_id: int):
         ).delete()
         db.query(iva).filter(iva.factura_id == factura_id).delete()
         db.query(Factura).filter(Factura.factura_id == factura_id).delete()
-        db.commit()
+        db.commit()  # Confirmar antes de eliminar el documento
     except Exception as e:
         print(f"Error durante el rollback manual: {str(e)}")
+
+
+def rollback_manual_nota_credito(db: Session, nota_credito_id: int):
+    try:
+        db.query(NotaCredito).filter(
+            NotaCredito.nota_credito_id == nota_credito_id
+        ).delete()
+        db.commit()  # Confirmar antes de eliminar el documento
+    except Exception as e:
+        print(f"Error durante el rollback manual de nota de crédito: {str(e)}")
+
+
+def rollback_manual_nota_debito(db: Session, nota_debito_id: int):
+    try:
+        db.query(NotaDebito).filter(
+            NotaDebito.nota_debito_id == nota_debito_id
+        ).delete()
+        db.commit()  # Confirmar antes de eliminar el documento
+    except Exception as e:
+        print(f"Error durante el rollback manual de nota de débito: {str(e)}")
 
 
 # Función para validar existencia de entidades
@@ -32,7 +52,6 @@ def validar_existencia(db: Session, modelo, id, nombre_entidad):
 # Función para calcular totales e impuestos
 def calcular_totales(detalles, aplica_igtf, precio_bcv):
     subtotal_total_sin_descuento = 0
-    subtotal_total_descuento = 0
     monto_exento = 0
     monto_base_general = 0
     monto_base_reducida = 0
@@ -50,12 +69,7 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
                 f"El descuento del producto con ID {detalle.producto_id} es inválido: {detalle.descuento}"
             )
 
-        total_producto = detalle.cantidad * detalle.precio_unitario
-
-        # Calcular el subtotal del producto
-        subtotal_producto = total_producto - (total_producto * (detalle.descuento or 0))
-        subtotal_total_descuento += subtotal_producto
-
+        total_producto = Decimal(detalle.cantidad) * Decimal(detalle.precio_unitario)
         # Calcular el subtotal del producto sin descuento
         subtotal_total_sin_descuento += total_producto
 
@@ -73,16 +87,16 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
             iva_adicional_monto += round(total_producto * Decimal("0.31"), 4)
 
         # Aplicar descuento al total del producto
-        descuento_producto = total_producto * (detalle.descuento or 0)
+        descuento_producto = total_producto * Decimal(detalle.descuento or 0)
         descuento_total += descuento_producto
 
-    # Calcular el monto total sumando las bases, IVA y restando descuentos
+    # Calcular el monto total sumando las bases, IVA, restando descuentos y considerando exentos
     monto_total = (
         monto_base_general
         + iva_general_monto
         + monto_base_reducida
         + iva_reducida_monto
-        + monto_base_adicional
+        + monto_base_adicional      
         + iva_adicional_monto
         + monto_exento
     )
@@ -93,8 +107,7 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
         monto_igtf = round(monto_total * Decimal("0.03"), 2)
 
     return {
-        "subtotal_descuento": round(float(max(subtotal_total_descuento, 0)), 4),
-        "subtotal_sin_descuento": round(float(max(subtotal_total_sin_descuento, 0)), 4),
+        "subtotal_productos": round(float(max(subtotal_total_sin_descuento, 0)), 4),
         "monto_base": round(
             float(
                 max(monto_base_general + monto_base_reducida + monto_base_adicional, 0)
@@ -170,7 +183,6 @@ def parse_nota_credito(nota_credito: NotaCredito) -> dict:
         "fecha_numero_control": nota_credito.fecha_numero_control,
         "hora_numero_control": nota_credito.hora_numero_control,
         "url_pdf": nota_credito.url_pdf,
-        "observacion": nota_credito.observacion,
     }
 
 
@@ -190,6 +202,10 @@ def parse_nota_debito(nota_debito: NotaDebito) -> dict:
         "descripcion": nota_debito.descripcion,
         "modif_documento": nota_debito.modif_documento,
         "modif_detalles": nota_debito.modif_detalles,
+        "numero_control": nota_debito.numero_control,
+        "fecha_numero_control": nota_debito.fecha_numero_control,
+        "hora_numero_control": nota_debito.hora_numero_control,
+        "url_pdf": nota_debito.url_pdf,
     }
 
 
@@ -234,27 +250,40 @@ def obtener_siguiente_id_nota_debito(db: Session):
 
 
 # Mover funciones relacionadas con notas de crédito y débito al helper
-def calcular_totales_nota(detalles_factura, modif_detalles, es_nota_debito=False):
+def calcular_totales_nota(detalles_factura, modif_detalles, db, es_nota_debito=False, aplica_igtf=False):
     """
     Calcula los totales e impuestos para notas de crédito o débito basados en las modificaciones.
-    Si es una nota de débito, no se valida que el producto exista en los detalles de la factura.
+    Si es una nota de débito, no se valida que el producto exista en los detalles de la factura,
+    pero sí se valida que el producto exista en la tabla Producto.
     """
-    subtotal_total_sin_descuento = 0
-    subtotal_total_descuento = 0
+    from src.producto.prodModel import Producto  # Importar el modelo Producto
+
     monto_exento = 0
     monto_base_general = 0
     monto_base_reducida = 0
     monto_base_adicional = 0
+    descuento_total = 0
     iva_general_monto = 0
     iva_reducida_monto = 0
     iva_adicional_monto = 0
+    subtotal_productos = 0
 
     modificaciones_detalles = []
 
     for mod_detalle in modif_detalles:
+        # Validar que el producto exista en la tabla Producto
+        producto = validar_existencia(
+            db, Producto, mod_detalle["id_producto"], "Producto"
+        )
+
         if not es_nota_debito:
+            # Validar que el producto exista en los detalles de la factura
             detalle_existente = next(
-                (d for d in detalles_factura if d.producto_id == mod_detalle["id_producto"]),
+                (
+                    d
+                    for d in detalles_factura
+                    if d.producto_id == mod_detalle["id_producto"]
+                ),
                 None,
             )
             if not detalle_existente:
@@ -262,41 +291,41 @@ def calcular_totales_nota(detalles_factura, modif_detalles, es_nota_debito=False
                     f"Producto con ID {mod_detalle['id_producto']} no existe en los detalles de la factura."
                 )
 
-        cantidad_ajustada = float(mod_detalle.get("cantidad", 0))
-        precio_unitario_ajustado = float(mod_detalle.get("precio_unitario", 0))
-        descuento_ajustado = float(mod_detalle.get("descuento", 0))
+        cantidad = Decimal(mod_detalle.get("cantidad", 0))
+        precio_unitario = Decimal(mod_detalle.get("precio_unitario", 0))
+        descuento = Decimal(mod_detalle.get("descuento", 0))
 
-        total_producto = cantidad_ajustada * precio_unitario_ajustado
-        descuento_convertido = round(total_producto * descuento_ajustado, 4)
-        subtotal_producto = total_producto - descuento_convertido
-
-        subtotal_total_descuento += subtotal_producto
-        subtotal_total_sin_descuento += total_producto
+        total_producto = cantidad * precio_unitario
+        descuento_producto = total_producto * descuento
+        total_producto_con_descuento = total_producto - descuento_producto
+        subtotal_productos += total_producto
+        descuento_total += descuento_producto
 
         if mod_detalle.get("exento", False):
-            monto_exento += subtotal_producto
+            monto_exento += total_producto_con_descuento
         else:
             alicuota_iva = mod_detalle.get("alicuota_iva", 0)
             if alicuota_iva == 16:
-                monto_base_general += subtotal_producto
-                iva_general_monto += round(subtotal_producto * Decimal("0.16"), 4)
+                monto_base_general += total_producto  # Base sin descuento
+                iva_general_monto += round(total_producto * Decimal("0.16"), 4)
             elif alicuota_iva == 8:
-                monto_base_reducida += subtotal_producto
-                iva_reducida_monto += round(subtotal_producto * Decimal("0.08"), 4)
+                monto_base_reducida += total_producto  # Base sin descuento
+                iva_reducida_monto += round(total_producto * Decimal("0.08"), 4)
             elif alicuota_iva == 31:
-                monto_base_adicional += subtotal_producto
-                iva_adicional_monto += round(subtotal_producto * Decimal("0.31"), 4)
+                monto_base_adicional += total_producto  # Base sin descuento
+                iva_adicional_monto += round(total_producto * Decimal("0.31"), 4)
 
         modificaciones_detalles.append(
             {
                 "producto_id": mod_detalle["id_producto"],
-                "cantidad": cantidad_ajustada,
-                "precio_unitario": precio_unitario_ajustado,
-                "descuento": descuento_convertido,
+                "descripcion": producto.descripcion,
+                "cantidad": cantidad,
+                "precio_unitario": precio_unitario,
+                "descuento": descuento_producto,
                 "alicuota_iva": mod_detalle.get("alicuota_iva", 0),
                 "exento": mod_detalle.get("exento", False),
-                "subtotal": subtotal_producto,
-                "total": subtotal_producto + iva_general_monto + iva_reducida_monto + iva_adicional_monto,
+                "subtotal": total_producto,
+                "total": total_producto_con_descuento,
             }
         )
 
@@ -310,11 +339,13 @@ def calcular_totales_nota(detalles_factura, modif_detalles, es_nota_debito=False
         + monto_exento
     )
 
-    monto_igtf = round(monto_total * Decimal("0.03"), 2) if monto_total > 0 else 0
+    if aplica_igtf and monto_total > 0:
+        monto_igtf = round(monto_total * Decimal("0.03"), 2)
+
+    total_general = monto_total + monto_igtf
 
     return {
-        "subtotal_descuento": round(float(max(subtotal_total_descuento, 0)), 4),
-        "subtotal_sin_descuento": round(float(max(subtotal_total_sin_descuento, 0)), 4),
+        "subtotal_productos": round(float(max(subtotal_productos, 0)), 4),
         "monto_base": round(
             float(
                 max(monto_base_general + monto_base_reducida + monto_base_adicional, 0)
@@ -331,8 +362,8 @@ def calcular_totales_nota(detalles_factura, modif_detalles, es_nota_debito=False
         "iva_general_monto": round(float(max(iva_general_monto, 0)), 4),
         "iva_reducida_monto": round(float(max(iva_reducida_monto, 0)), 4),
         "iva_adicional_monto": round(float(max(iva_adicional_monto, 0)), 4),
-        "base_igtf": round(float(max(monto_total, 0)), 4),
         "igtf": 3,
+        "base_igtf": round(float(max(monto_total, 0)), 4),
         "monto_igtf": round(float(max(monto_igtf, 0)), 4),
-        "monto_total": round(float(max(monto_total + monto_igtf, 0)), 4),
+        "monto_total": round(float(max(total_general, 0)), 4),
     }, modificaciones_detalles

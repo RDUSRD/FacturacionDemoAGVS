@@ -73,7 +73,7 @@ def generar_json_imprenta(
         "idtipocedulacliente": idtipocedulacliente,
         "idtipodocumento": idtipodocumento,
         "direccioncliente": cliente.domicilio_fiscal,
-        "subtotal": to_float("subtotal", impuestos.subtotal_sin_descuento),
+        "subtotal": to_float("subtotal", impuestos.subtotal_productos),
         "exento": to_float("exento", impuestos.monto_exento),
         "tasag": to_float("tasag", impuestos.iva_general),
         "baseg": to_float("baseg", impuestos.monto_base_general),
@@ -109,7 +109,9 @@ def generar_json_imprenta(
                     if not detalle.producto.exento
                     else 0
                 ),
-                "descuento": to_float("descuento", detalle.descuento),
+                "descuento": to_float(
+                    "descuento", detalle.descuento
+                ),  # Valor en moneda
                 "exento": detalle.producto.exento,
                 "monto": to_float("monto", detalle.total),
             }
@@ -147,8 +149,9 @@ def generar_json_imprenta_notas(
     empresa: EmpresaSchema,
     precio_bcv: float,
     tipo_documento: int,
-    factura_relacionada_id: int,
+    factura_nro_control: str,
 ):
+    print(f"detalles: {detalles}")
     # Convertir a minúsculas para evitar problemas de escritura
     tipo_cedula_lower = cliente.tipo_documento.lower()
 
@@ -175,7 +178,7 @@ def generar_json_imprenta_notas(
         "idtipocedulacliente": idtipocedulacliente,
         "idtipodocumento": tipo_documento,
         "direccioncliente": cliente.domicilio_fiscal,
-        "subtotal": to_float("subtotal", nota.modif_documento["subtotal_sin_descuento"]),
+        "subtotal": to_float("subtotal", nota.modif_documento["subtotal_productos"]),
         "exento": to_float("exento", nota.modif_documento["monto_exento"]),
         "tasag": to_float("tasag", nota.modif_documento["iva_general"]),
         "baseg": to_float("baseg", nota.modif_documento["monto_base_general"]),
@@ -189,31 +192,34 @@ def generar_json_imprenta_notas(
         "tasaigtf": to_float("tasaigtf", nota.modif_documento["igtf"]),
         "baseigtf": to_float("baseigtf", nota.modif_documento["base_igtf"]),
         "impuestoigtf": to_float("impuestoigtf", nota.modif_documento["monto_igtf"]),
-        "total": to_float("total", nota.modif_documento["monto"]),
+        "total": to_float("total", nota.modif_documento["monto_total"]),
         "sendmail": "1" if SEND_EMAIL_SMART else "0",
-        "relacionado": factura_relacionada_id,  # ID de la factura relacionada
+        "relacionado": factura_nro_control,  # ID de la factura relacionada
         "sucursal": "",
-        "numerointerno": nota.nota_credito_id if tipo_documento == 3 else nota.nota_debito_id,
+        "numerointerno": (
+            nota.nota_credito_id if tipo_documento == 3 else nota.nota_debito_id
+        ),
         "tasacambio": to_float("tasacambio", precio_bcv),
         "Observacion": "Nota generada automáticamente.",
         "cuerpofactura": [
             {
-                "codigo": detalle.producto_id,
-                "descripcion": detalle.producto.descripcion,
+                "codigo": detalle.get("producto_id"),
+                "descripcion": detalle.get("descripcion", ""),
                 "comentario": "",
-                "precio": to_float("precio", detalle.precio_unitario),
-                "cantidad": to_float("cantidad", detalle.cantidad),
-                "tasa": to_float("tasa", detalle.producto.alicuota_iva),
+                "precio": to_float("precio", detalle.get("precio_unitario", 0)),
+                "cantidad": to_float("cantidad", detalle.get("cantidad", 0)),
+                "tasa": to_float("tasa", detalle.get("alicuota_iva", 0)),
                 "impuesto": (
                     to_float(
-                        "impuesto", detalle.total * detalle.producto.alicuota_iva / 100
+                        "impuesto",
+                        detalle.get("total", 0) * detalle.get("alicuota_iva", 0) / 100,
                     )
-                    if not detalle.producto.exento
+                    if not detalle.get("exento", False)
                     else 0
                 ),
-                "descuento": to_float("descuento", detalle.descuento),
-                "exento": detalle.producto.exento,
-                "monto": to_float("monto", detalle.total),
+                "descuento": to_float("descuento", detalle.get("descuento", 0)),
+                "exento": detalle.get("exento", False),
+                "monto": to_float("monto", detalle.get("total", 0)),
             }
             for detalle in detalles
         ],

@@ -2,6 +2,7 @@
 from datetime import datetime
 import os
 from decimal import Decimal
+import traceback
 
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -27,6 +28,8 @@ from src.documento.documentoService.smartService import (
 )
 from src.documento.documentoService.helperService import (
     rollback_manual,
+    rollback_manual_nota_credito,
+    rollback_manual_nota_debito,
     validar_existencia,
     calcular_totales,
     parse_factura,
@@ -38,6 +41,16 @@ from src.documento.documentoService.helperService import (
     obtener_siguiente_id_nota_debito,
     calcular_totales_nota,
 )
+
+
+def decimal_to_float(data):
+    if isinstance(data, list):
+        return [decimal_to_float(item) for item in data]
+    elif isinstance(data, dict):
+        return {key: decimal_to_float(value) for key, value in data.items()}
+    elif isinstance(data, Decimal):
+        return float(data)
+    return data
 
 
 # endregion
@@ -106,8 +119,7 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
             # Crear impuestos con el valor calculado de 'base'
             impuesto = iva(
                 factura_id=factura.factura_id,
-                subtotal_descuento=totales["subtotal_descuento"],
-                subtotal_sin_descuento=totales["subtotal_sin_descuento"],
+                subtotal_productos=totales["subtotal_productos"],
                 base=totales["monto_base"],  # Asignar el valor calculado de 'base'
                 monto_exento=totales["monto_exento"],
                 monto_base_general=totales["monto_base_general"],
@@ -137,9 +149,9 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                     empresa,
                     impuesto,
                     precio_bcv,
-                    1,
                     pedido.id,
                 )
+                print(f"JSON para imprenta: {json_imprenta}")
                 url_facturacion = f"{SMART_URL}/facturacion"
                 respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_facturacion)
 
@@ -192,9 +204,11 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
         return {"error": f"Error de validación: {str(e)}"}
 
     except Exception as e:
+        error_trace = traceback.format_exc()
         print(f"Error inesperado: {str(e)}")
+        print(f"Traceback del error: {error_trace}")
         rollback_manual(db, factura_id)  # Eliminar registros inconsistentes
-        return {"error": f"Error inesperado: {str(e)}"}
+        return {"error": f"Error inesperado: {str(e)}", "traceback": error_trace}
 
 
 # endregion
@@ -229,11 +243,13 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
             # Validar que la factura asociada existe
             factura = (
                 db.query(Factura)
-                .filter(Factura.id == documento_data.factura_id)
+                .filter(Factura.factura_id == documento_data.factura_id)
                 .first()
             )
             if not factura:
-                raise ValueError("La factura asociada no existe.")
+                raise ValueError(
+                    f"La factura con ID {documento_data.factura_id} no existe. No se puede crear la nota de crédito."
+                )
 
             # Obtener los detalles de la factura desde la tabla DetalleFactura
             detalles_factura = (
@@ -244,15 +260,22 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
 
             # Calcular totales e impuestos
             totales, modificaciones_detalles = calcular_totales_nota(
-                detalles_factura, documento_data.modif_detalles
+                detalles_factura,
+                documento_data.modif_detalles,
+                db,
+                aplica_igtf=factura.aplica_igtf,
             )
+
+            # Ajustar la serialización de modif_documento y modif_detalles
+            modif_documento = decimal_to_float(totales)
+            modif_detalles = decimal_to_float(modificaciones_detalles)
 
             # Crear la nota de crédito
             nota_credito = NotaCredito(
                 id=documento_id,  # Asignar el ID calculado para documento
                 nota_credito_id=nota_credito_id,  # Asignar el ID calculado para nota de crédito
                 tipo_documento="NotaCredito",
-                factura_id=factura.id,
+                factura_id=factura.factura_id,
                 empresa_id=factura.empresa_id,
                 cliente_id=factura.cliente_id,
                 estado="creado",
@@ -260,30 +283,13 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
                 descripcion=documento_data.descripcion,
                 fecha_emision=datetime.today().date(),
                 hora_emision=datetime.now().time(),
-                modif_documento={
-                    "subtotal_descuento": totales["subtotal_descuento"],
-                    "subtotal_sin_descuento": totales["subtotal_sin_descuento"],
-                    "base": totales["monto_base"],
-                    "monto_exento": totales["monto_exento"],
-                    "monto_base_general": totales["monto_base_general"],
-                    "monto_base_reducida": totales["monto_base_reducida"],
-                    "monto_base_adicional": totales["monto_base_adicional"],
-                    "iva_general": totales["iva_general"],
-                    "iva_general_monto": totales["iva_general_monto"],
-                    "iva_reducida": totales["iva_reducida"],
-                    "iva_reducida_monto": totales["iva_reducida_monto"],
-                    "iva_adicional": totales["iva_adicional"],
-                    "iva_adicional_monto": totales["iva_adicional_monto"],
-                    "base_igtf": totales["base_igtf"],
-                    "igtf": totales["igtf"],
-                    "monto_igtf": totales["monto_igtf"],
-                    "monto": totales["monto_total"],
-                },
-                modif_detalles=modificaciones_detalles,
+                modif_documento=modif_documento,  # Guardar directamente como diccionario
+                modif_detalles=modif_detalles,  # Guardar directamente como lista
             )
             db.add(nota_credito)
 
             if POST_SMART == "true":
+                print("POST_SMART is true")
                 # Enviar a imprenta digital para notas
                 cliente = get_cliente_by_id(db, factura.cliente_id)
                 empresa = get_empresa_by_id(db, factura.empresa_id)
@@ -294,13 +300,15 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
                     empresa,
                     precio_bcv=obtener_dolar_bcv(db),
                     tipo_documento=3,  # Tipo de documento para nota de crédito
-                    factura_relacionada_id=factura.id,  # ID de la factura relacionada
+                    factura_nro_control=factura.numero_control,  # ID de la factura relacionada
                 )
+                print(f"JSON para imprenta de nota de crédito: {json_imprenta}")
                 url_imprenta = (
                     f"{SMART_URL}/facturacion"  # Usar variable de entorno para la URL
                 )
                 respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_imprenta)
 
+                print(f"Respuesta de imprenta: {respuesta_imprenta}")
                 if "success" in respuesta_imprenta and respuesta_imprenta["success"]:
                     # Actualizar los campos con los datos de la respuesta
                     nota_credito.numero_control = respuesta_imprenta["data"][
@@ -321,7 +329,7 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
                     print(
                         f"Error al enviar a imprenta: {error_message}, {respuesta_imprenta.get('data', {})}"
                     )
-                    rollback_manual(
+                    rollback_manual_nota_credito(
                         db, nota_credito.nota_credito_id
                     )  # Realizar rollback en caso de error
                     raise ValueError(f"Error al enviar a imprenta: {error_message}")
@@ -331,18 +339,21 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
 
     except IntegrityError as e:
         print(f"Error de integridad: {str(e)}")
-        rollback_manual(db, nota_credito_id)
+        rollback_manual_nota_credito(db, nota_credito.nota_credito_id)
         return {"error": f"Error de integridad: {str(e)}"}
 
     except ValueError as e:
         print(f"Error de validación: {str(e)}")
-        rollback_manual(db, nota_credito_id)
+        rollback_manual_nota_credito(db, nota_credito.nota_credito_id)
         return {"error": f"Error de validación: {str(e)}"}
 
     except Exception as e:
+        error_trace = traceback.format_exc()
         print(f"Error inesperado: {str(e)}")
-        rollback_manual(db, nota_credito_id)
-        return {"error": f"Error inesperado: {str(e)}"}
+        print(f"Traceback del error: {error_trace}")
+        rollback_manual_nota_credito(db, nota_credito.nota_credito_id)
+
+        return {"error": f"Error inesperado: {str(e)}", "traceback": error_trace}
 
 
 # endregion
@@ -390,7 +401,7 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
 
             # Calcular totales e impuestos
             totales, modificaciones_detalles = calcular_totales_nota(
-                detalles_factura, documento_data.modif_detalles, True
+                detalles_factura, documento_data.modif_detalles, db, True
             )
 
             # Crear la nota de débito
@@ -467,7 +478,7 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
                     print(
                         f"Error al enviar a imprenta: {error_message}, {respuesta_imprenta.get('data', {})}"
                     )
-                    rollback_manual(
+                    rollback_manual_nota_debito(
                         db, nota_debito.nota_debito_id
                     )  # Realizar rollback en caso de error
                     raise ValueError(f"Error al enviar a imprenta: {error_message}")
@@ -477,18 +488,20 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
 
     except IntegrityError as e:
         print(f"Error de integridad: {str(e)}")
-        rollback_manual(db, nota_debito_id)
+        rollback_manual_nota_debito(db, nota_debito.nota_debito_id)
         return {"error": f"Error de integridad: {str(e)}"}
 
     except ValueError as e:
         print(f"Error de validación: {str(e)}")
-        rollback_manual(db, nota_debito_id)
+        rollback_manual_nota_debito(db, nota_debito.nota_debito_id)
         return {"error": f"Error de validación: {str(e)}"}
 
     except Exception as e:
+        error_trace = traceback.format_exc()
         print(f"Error inesperado: {str(e)}")
-        rollback_manual(db, nota_debito_id)
-        return {"error": f"Error inesperado: {str(e)}"}
+        print(f"Traceback del error: {error_trace}")
+        rollback_manual_nota_debito(db, nota_debito.nota_debito_id)
+        return {"error": f"Error inesperado: {str(e)}", "traceback": error_trace}
 
 
 # endregion

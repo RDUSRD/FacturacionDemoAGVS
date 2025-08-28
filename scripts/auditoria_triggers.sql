@@ -2,16 +2,28 @@
 CREATE OR REPLACE FUNCTION registrar_auditoria()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO auditoria (tabla_afectada, registro_id, accion, detalles, fecha_hora, usuario)
-    VALUES (
-        TG_TABLE_NAME,  -- Nombre de la tabla afectada
-        NEW.id,         -- ID del registro afectado (asume que todas las tablas tienen una columna 'id')
-        TG_OP,          -- Operación (INSERT, UPDATE, DELETE)
-        row_to_json(NEW), -- Detalles del registro afectado en formato JSON
-        CURRENT_TIMESTAMP, -- Fecha y hora de la operación
-        current_user    -- Usuario que ejecutó la operación
-    );
-    RETURN NEW;
+    IF TG_OP = 'DELETE' THEN
+        INSERT INTO auditoria (tabla_afectada, registro_id, accion, detalles, fecha_hora, usuario)
+        VALUES (
+            TG_TABLE_NAME,  -- Nombre de la tabla afectada
+            OLD.id,         -- ID del registro eliminado (usando OLD)
+            TG_OP,          -- Operación (DELETE)
+            row_to_json(OLD), -- Detalles del registro eliminado en formato JSON
+            CURRENT_TIMESTAMP, -- Fecha y hora de la operación
+            current_user    -- Usuario que ejecutó la operación
+        );
+    ELSE
+        INSERT INTO auditoria (tabla_afectada, registro_id, accion, detalles, fecha_hora, usuario)
+        VALUES (
+            TG_TABLE_NAME,  -- Nombre de la tabla afectada
+            NEW.id,         -- ID del registro afectado (usando NEW para INSERT o UPDATE)
+            TG_OP,          -- Operación (INSERT, UPDATE)
+            row_to_json(NEW), -- Detalles del registro afectado en formato JSON
+            CURRENT_TIMESTAMP, -- Fecha y hora de la operación
+            current_user    -- Usuario que ejecutó la operación
+        );
+    END IF;
+    RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
