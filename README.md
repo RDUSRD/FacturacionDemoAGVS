@@ -13,13 +13,14 @@ The Facturación System is a FastAPI-based application designed to manage invoic
 - **Advanced Logging**: Custom logger with rotating file handlers and detailed request information.
 
 ## Recent Updates
-- **Version 0.5.4**:
-  - Adjusted `calcular_totales` to ensure IVA is calculated on the total product price without discounts and discounts are applied afterward.
-  - Fixed IGTF calculation to use 0.03% instead of 3%.
-  - Updated `parse_factura` to correctly calculate `monto_dolares` and ensure accurate invoice parsing.
-  - Replaced `db.update` with direct attribute modification for SQLAlchemy session tracking.
-  - Improved error handling for unexpected session attribute issues.
-  - New enviroments variables
+- **Version 0.6.1**:
+  - Adjusted `subtotal_productos` to exclude discounts, aligning with the imprenta's expectations.
+  - Updated JSON generation logic to include taxes in the `subtotal` field.
+  - Improved validation for subtotal consistency in `calcular_totales_nota`.
+  - Enhanced error handling for imprenta API responses.
+  - Integrated SMART API for invoices, credit notes, and debit notes.
+  - Adjusted parsing logic for better compatibility with SMART API.
+  - Refined exception handling for API and database operations.
 
 ## Dependencies
 The project requires the following Python packages:
