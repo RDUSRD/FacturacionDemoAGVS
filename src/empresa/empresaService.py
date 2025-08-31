@@ -4,12 +4,16 @@ from src.empresa.empModel import Empresa
 from src.empresa.empresaSchema import EmpresaSchema, EmpresaUpdateSchema
 
 
-def get_all_empresas(db: Session):
-    return db.query(Empresa).all()
+def get_all_empresas(db: Session, limit: int = 10, offset: int = 0):
+    return db.query(Empresa).offset(offset).limit(limit).all()
 
 
 def get_empresa_by_id(db: Session, empresa_id: int):
     return db.query(Empresa).filter(Empresa.id == empresa_id).first()
+
+
+def get_empresa_by_rif(db: Session, rif: str):
+    return db.query(Empresa).filter(Empresa.rif == rif).first()
 
 
 def get_or_create_empresa(db: Session, empresa_data: EmpresaSchema):

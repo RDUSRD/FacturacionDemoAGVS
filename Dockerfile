@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     libjpeg62-turbo-dev \
     libpangocairo-1.0-0 \
-    libgdk-pixbuf2.0-0 \
+    libgdk-pixbuf-xlib-2.0-0 \
     shared-mime-info \
     netcat-openbsd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*

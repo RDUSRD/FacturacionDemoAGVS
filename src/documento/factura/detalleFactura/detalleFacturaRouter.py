@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy.orm import Session
 from database import get_db
 from src.documento.factura.detalleFactura.detalleFacturaService import (
@@ -13,10 +13,19 @@ router = APIRouter(prefix="/detalle_factura", tags=["DetalleFactura"])
 
 
 @router.get("/")
-def get_detalles_factura(request: Request, db: Session = Depends(get_db)):
+def get_detalles_factura(
+    request: Request,
+    db: Session = Depends(get_db),
+    limit: int = Query(10, ge=1),
+    offset: int = Query(0, ge=0),
+):
     request_info = get_request_info(request)
     logger.info("Obteniendo todos los detalles de factura", extra=request_info)
-    return get_all_detalles_factura(db)
+    detalles_factura = get_all_detalles_factura(db, limit=limit, offset=offset)
+    if not detalles_factura:
+        logger.warning("No se encontraron detalles de factura", extra=request_info)
+        raise HTTPException(status_code=404, detail="No se encontraron detalles de factura")
+    return detalles_factura
 
 
 @router.get("/{detalle_factura_id}")

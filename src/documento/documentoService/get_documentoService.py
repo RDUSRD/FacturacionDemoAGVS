@@ -6,8 +6,8 @@ from src.documento.factura.iva.ivaModel import iva
 
 
 # Función para obtener todos los documentos con el ID relacionado
-def get_all_documentos(db: Session):
-    documentos = db.query(Documento).all()
+def get_all_documentos(db: Session, limit: int = 10, offset: int = 0):
+    documentos = db.query(Documento).offset(offset).limit(limit).all()
     documentos_enriquecidos = []
 
     for documento in documentos:
@@ -107,8 +107,8 @@ def get_documento_by_numero_control(db: Session, numero_control: str):
 
 
 # Función para obtener documentos por ID de empresa
-def get_documentos_by_empresa_id(db: Session, empresa_id: int):
-    documentos = db.query(Documento).filter(Documento.empresa_id == empresa_id).all()
+def get_documentos_by_empresa_id(db: Session, empresa_id: int, limit: int = 10, offset: int = 0):
+    documentos = db.query(Documento).filter(Documento.empresa_id == empresa_id).offset(offset).limit(limit).all()
     documentos_enriquecidos = []
 
     for documento in documentos:
@@ -143,8 +143,8 @@ def get_documentos_by_empresa_id(db: Session, empresa_id: int):
 
 
 # Función para obtener documentos por ID de cliente
-def get_documentos_by_cliente_id(db: Session, cliente_id: int):
-    documentos = db.query(Documento).filter(Documento.cliente_id == cliente_id).all()
+def get_documentos_by_cliente_id(db: Session, cliente_id: int, limit: int = 10, offset: int = 0):
+    documentos = db.query(Documento).filter(Documento.cliente_id == cliente_id).offset(offset).limit(limit).all()
     documentos_enriquecidos = []
 
     for documento in documentos:

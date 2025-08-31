@@ -13,7 +13,6 @@ def get_all_auditorias(db: Session, limit: int = 100, page: int = 1):
     try:
         offset = (page - 1) * limit
         auditorias = db.query(Auditoria).offset(offset).limit(limit).all()
-        print(f"Auditorias obtenidas: {len(auditorias)}")
         return [auditoria.to_dict() for auditoria in auditorias]
     except Exception as e:
         return f"Error al obtener auditorias: {e}"

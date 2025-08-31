@@ -7,3 +7,4 @@
 /logs/
 *.pyc
 loggers/__pycache__/
+/resumenes/

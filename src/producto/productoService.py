@@ -4,8 +4,8 @@ from src.producto.productoSchema import ProductoSchema, ProductoUpdateSchema
 import random
 
 
-def get_all_productos(db: Session):
-    return db.query(Producto).all()
+def get_all_productos(db: Session, limit: int = 10, offset: int = 0):
+    return db.query(Producto).offset(offset).limit(limit).all()
 
 
 def get_producto_by_id(db: Session, producto_id: int):

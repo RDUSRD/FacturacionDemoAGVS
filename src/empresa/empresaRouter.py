@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy.orm import Session
 from database import get_db
 from src.empresa.empresaService import (
@@ -18,10 +18,15 @@ router = APIRouter(prefix="/empresa", tags=["Empresa"])
 
 
 @router.get("/")
-def get_empresas(request: Request, db: Session = Depends(get_db)):
+def get_empresas(
+    request: Request,
+    db: Session = Depends(get_db),
+    limit: int = Query(10, ge=1),
+    offset: int = Query(0, ge=0),
+):
     request_info = get_request_info(request)
     logger.info("Obteniendo todas las empresas", extra=request_info)
-    return get_all_empresas(db)
+    return get_all_empresas(db, limit=limit, offset=offset)
 
 
 @router.get("/{empresa_id}")

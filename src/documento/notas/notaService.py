@@ -3,8 +3,8 @@ from src.documento.notas.notaModel import NotaDebito, NotaCredito
 
 
 # Servicio Nota de Débito
-def get_all_notas_debito(db: Session):
-    return db.query(NotaDebito).all()
+def get_all_notas_debito(db: Session, limit: int = 10, offset: int = 0):
+    return db.query(NotaDebito).offset(offset).limit(limit).all()
 
 
 def get_nota_debito_by_id(db: Session, nota_debito_id: int):
@@ -15,8 +15,8 @@ def get_nota_debito_by_factura(db: Session, factura_id: int):
 
 
 # Servicio Nota de Crédito
-def get_all_notas_credito(db: Session):
-    return db.query(NotaCredito).all()
+def get_all_notas_credito(db: Session, limit: int = 10, offset: int = 0):
+    return db.query(NotaCredito).offset(offset).limit(limit).all()
 
 
 def get_nota_credito_by_id(db: Session, nota_credito_id: int):

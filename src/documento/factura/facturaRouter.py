@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from database import get_db
 from src.documento.factura.facturaService import (
-    get_documentos_by_cliente_id,
-    get_documentos_by_empresa_id,
+    get_facturas_by_cliente_id,
+    get_facturas_by_empresa_id,
     get_factura_by_id,
     get_all_facturas,
     get_iva_by_factura_id,
@@ -18,10 +18,16 @@ router = APIRouter(prefix="/factura", tags=["Factura"])
 
 
 @router.get("/")
-def get_facturas(request: Request, db: Session = Depends(get_db)):
+def get_facturas(
+    request: Request, db: Session = Depends(get_db), limit: int = Query(10, ge=1), offset: int = Query(0, ge=0)
+):
     request_info = get_request_info(request)
     logger.info("Obteniendo todas las facturas", extra=request_info)
-    return get_all_facturas(db)
+    facturas = get_all_facturas(db, limit=limit, offset=offset)
+    if not facturas:
+        logger.warning("No se encontraron facturas", extra=request_info)
+        raise HTTPException(status_code=404, detail="No se encontraron facturas")
+    return facturas
 
 
 @router.get("/{factura_id}")
@@ -57,41 +63,39 @@ def get_factura_by_numero_control_route(
 
 
 @router.get("/empresa/{empresa_id}")
-def get_facturas_by_empresa_id(
-    empresa_id: int, request: Request, db: Session = Depends(get_db)
+def get_facturas_by_empresa(
+    empresa_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    limit: int = Query(10, ge=1),
+    offset: int = Query(0, ge=0),
 ):
     request_info = get_request_info(request)
-    logger.info(
-        f"Obteniendo facturas para la empresa con ID: {empresa_id}", extra=request_info
-    )
-    facturas = get_documentos_by_empresa_id(db, empresa_id)
+    logger.info(f"Obteniendo facturas para la empresa con ID: {empresa_id}", extra=request_info)
+    facturas = get_facturas_by_empresa_id(db, empresa_id, limit=limit, offset=offset)
     if not facturas:
-        logger.warning(
-            f"No se encontraron facturas para la empresa con ID: {empresa_id}",
-            extra=request_info,
-        )
+        logger.warning(f"No se encontraron facturas para la empresa con ID: {empresa_id}", extra=request_info)
         raise HTTPException(
-            status_code=404, detail="No se encontraron facturas para la empresa"
+            status_code=404, detail="No se encontraron facturas para la empresa especificada"
         )
     return facturas
 
 
 @router.get("/cliente/{cliente_id}")
-def get_facturas_by_cliente_id(
-    cliente_id: int, request: Request, db: Session = Depends(get_db)
+def get_facturas_by_cliente(
+    cliente_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    limit: int = Query(10, ge=1),
+    offset: int = Query(0, ge=0),
 ):
     request_info = get_request_info(request)
-    logger.info(
-        f"Obteniendo facturas para el cliente con ID: {cliente_id}", extra=request_info
-    )
-    facturas = get_documentos_by_cliente_id(db, cliente_id)
+    logger.info(f"Obteniendo facturas para el cliente con ID: {cliente_id}", extra=request_info)
+    facturas = get_facturas_by_cliente_id(db, cliente_id, limit=limit, offset=offset)
     if not facturas:
-        logger.warning(
-            f"No se encontraron facturas para el cliente con ID: {cliente_id}",
-            extra=request_info,
-        )
+        logger.warning(f"No se encontraron facturas para el cliente con ID: {cliente_id}", extra=request_info)
         raise HTTPException(
-            status_code=404, detail="No se encontraron facturas para el cliente"
+            status_code=404, detail="No se encontraron facturas para el cliente especificado"
         )
     return facturas
 

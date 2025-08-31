@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy.orm import Session
 from database import get_db
 from src.producto.productoService import (
@@ -20,10 +20,16 @@ router = APIRouter(prefix="/producto", tags=["Producto"])
 
 
 @router.get("/")
-def get_productos(request: Request, db: Session = Depends(get_db)):
+def get_productos(
+    request: Request, db: Session = Depends(get_db), limit: int = Query(10, ge=1), offset: int = Query(0, ge=0)
+):
     request_info = get_request_info(request)
     logger.info("Obteniendo todos los productos", extra=request_info)
-    return get_all_productos(db)
+    productos = get_all_productos(db, limit=limit, offset=offset)
+    if not productos:
+        logger.warning("No se encontraron productos", extra=request_info)
+        raise HTTPException(status_code=404, detail="No se encontraron productos")
+    return productos
 
 
 @router.get("/{producto_id}")

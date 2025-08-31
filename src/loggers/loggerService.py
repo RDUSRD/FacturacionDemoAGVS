@@ -172,12 +172,14 @@ def get_request_info(request: Request, token: str = None):
     return {"device": device, "user": user, "ip": ip}
 
 
-def convert_logs_to_json(log_file_path: str):
+def convert_logs_to_json(log_file_path: str, limit: int = 10, offset: int = 0):
     """
-    Convierte un archivo de logs en formato TXT a JSON.
+    Convierte un archivo de logs en formato TXT a JSON con soporte para paginación.
 
     Args:
         log_file_path (str): Ruta del archivo de logs.
+        limit (int): Número máximo de registros a devolver.
+        offset (int): Número de registros a omitir desde el inicio.
 
     Returns:
         list: Una lista de diccionarios con los logs en formato JSON.
@@ -202,7 +204,9 @@ def convert_logs_to_json(log_file_path: str):
                     "message": parts[6].strip(),
                 }
                 logs.append(log_entry)
-    return logs
+
+    # Aplicar paginación
+    return logs[offset : offset + limit]
 
 
 # Configuración global del logger

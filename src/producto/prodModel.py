@@ -19,3 +19,6 @@ class Producto(Base):
 
     detalles_factura = relationship("DetalleFactura", back_populates="producto")
     detalles_pedido = relationship("DetallePedido", back_populates="producto")
+
+    def to_dict(self):
+        return {column.name: getattr(self, column.name) for column in self.__table__.columns}

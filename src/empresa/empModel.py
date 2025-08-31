@@ -16,3 +16,6 @@ class Empresa(Base):
 
     documentos = relationship("Documento", back_populates="empresa")
     pedidos = relationship("Pedido", back_populates="empresa")
+
+    def to_dict(self):
+        return {column.name: getattr(self, column.name) for column in self.__table__.columns}

@@ -253,6 +253,147 @@ def update_pedido(db: Session, pedido_id: int, pedido_data: PedidoUpdateSchema):
         raise ValueError(f"Error al actualizar el pedido: {str(e)}")
 
 
+# Get all Pedidos with pagination
+def get_all_pedidos(db: Session, limit: int = 10, offset: int = 0):
+    pedidos = db.query(Pedido).offset(offset).limit(limit).all()
+    pedidos_list = []
+
+    for pedido in pedidos:
+        detalles_pedido = (
+            db.query(DetallePedido).filter(DetallePedido.pedido_id == pedido.id).all()
+        )
+
+        pedido_dict = {
+            "id": pedido.id,
+            "cliente_id": pedido.cliente_id,
+            "empresa_id": pedido.empresa_id,
+            "estado": pedido.estado,
+            "fecha_creacion": pedido.fecha_creacion,
+            "fecha_actualizacion": pedido.fecha_actualizacion,
+            "fecha_vencimiento": pedido.fecha_vencimiento,
+            "total": float(pedido.total) if pedido.total else None,
+            "observaciones": pedido.observaciones,
+        }
+
+        detalles_dict = [
+            {
+                "id": detalle.id,
+                "producto_id": detalle.producto_id,
+                "cantidad": detalle.cantidad,
+                "precio_unitario": float(detalle.precio_unitario),
+                "alicuota_iva": (
+                    float(detalle.alicuota_iva) if detalle.alicuota_iva else None
+                ),
+                "descuento": float(detalle.descuento) if detalle.descuento else None,
+                "total": float(detalle.total),
+            }
+            for detalle in detalles_pedido
+        ]
+
+        pedido_dict["detalles_pedido"] = detalles_dict
+        pedidos_list.append(pedido_dict)
+
+    return pedidos_list
+
+
+# Get Pedidos by Empresa ID with pagination
+def get_pedidos_by_empresa_id(db: Session, empresa_id: int, limit: int = 10, offset: int = 0):
+    pedidos = (
+        db.query(Pedido)
+        .filter(Pedido.empresa_id == empresa_id)
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    pedidos_list = []
+
+    for pedido in pedidos:
+        detalles_pedido = (
+            db.query(DetallePedido).filter(DetallePedido.pedido_id == pedido.id).all()
+        )
+
+        pedido_dict = {
+            "id": pedido.id,
+            "cliente_id": pedido.cliente_id,
+            "empresa_id": pedido.empresa_id,
+            "estado": pedido.estado,
+            "fecha_creacion": pedido.fecha_creacion,
+            "fecha_actualizacion": pedido.fecha_actualizacion,
+            "fecha_vencimiento": pedido.fecha_vencimiento,
+            "total": float(pedido.total) if pedido.total else None,
+            "observaciones": pedido.observaciones,
+        }
+
+        detalles_dict = [
+            {
+                "id": detalle.id,
+                "producto_id": detalle.producto_id,
+                "cantidad": detalle.cantidad,
+                "precio_unitario": float(detalle.precio_unitario),
+                "alicuota_iva": (
+                    float(detalle.alicuota_iva) if detalle.alicuota_iva else None
+                ),
+                "descuento": float(detalle.descuento) if detalle.descuento else None,
+                "total": float(detalle.total),
+            }
+            for detalle in detalles_pedido
+        ]
+
+        pedido_dict["detalles_pedido"] = detalles_dict
+        pedidos_list.append(pedido_dict)
+
+    return pedidos_list
+
+
+# Get Pedidos by Cliente ID with pagination
+def get_pedidos_by_cliente_id(db: Session, cliente_id: int, limit: int = 10, offset: int = 0):
+    pedidos = (
+        db.query(Pedido)
+        .filter(Pedido.cliente_id == cliente_id)
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    pedidos_list = []
+
+    for pedido in pedidos:
+        detalles_pedido = (
+            db.query(DetallePedido).filter(DetallePedido.pedido_id == pedido.id).all()
+        )
+
+        pedido_dict = {
+            "id": pedido.id,
+            "cliente_id": pedido.cliente_id,
+            "empresa_id": pedido.empresa_id,
+            "estado": pedido.estado,
+            "fecha_creacion": pedido.fecha_creacion,
+            "fecha_actualizacion": pedido.fecha_actualizacion,
+            "fecha_vencimiento": pedido.fecha_vencimiento,
+            "total": float(pedido.total) if pedido.total else None,
+            "observaciones": pedido.observaciones,
+        }
+
+        detalles_dict = [
+            {
+                "id": detalle.id,
+                "producto_id": detalle.producto_id,
+                "cantidad": detalle.cantidad,
+                "precio_unitario": float(detalle.precio_unitario),
+                "alicuota_iva": (
+                    float(detalle.alicuota_iva) if detalle.alicuota_iva else None
+                ),
+                "descuento": float(detalle.descuento) if detalle.descuento else None,
+                "total": float(detalle.total),
+            }
+            for detalle in detalles_pedido
+        ]
+
+        pedido_dict["detalles_pedido"] = detalles_dict
+        pedidos_list.append(pedido_dict)
+
+    return pedidos_list
+
+
 # # Delete a Pedido
 # def delete_pedido(db: Session, pedido_id: int):
 #     pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()

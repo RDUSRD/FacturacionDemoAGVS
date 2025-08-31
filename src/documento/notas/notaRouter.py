@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Query
 from sqlalchemy.orm import Session
 from database import get_db
 from src.documento.notas.notaService import (
@@ -17,10 +17,19 @@ logger = get_logger("notaRouter")
 
 # Rutas para Notas de Débito
 @router.get("/nota_debito")
-def route_get_notas_debito(request: Request, db: Session = Depends(get_db)):
+def route_get_notas_debito(
+    request: Request,
+    db: Session = Depends(get_db),
+    limit: int = Query(10, ge=1),
+    offset: int = Query(0, ge=0),
+):
     request_info = get_request_info(request)
     logger.info("Solicitud para obtener todas las notas de débito", extra=request_info)
-    return get_all_notas_debito(db)
+    notas_debito = get_all_notas_debito(db, limit=limit, offset=offset)
+    if not notas_debito:
+        logger.warning("No se encontraron notas de débito", extra=request_info)
+        return {"error": "No se encontraron notas de débito"}
+    return notas_debito
 
 
 @router.get("/nota_debito/{nota_debito_id}")
@@ -64,10 +73,19 @@ def route_get_nota_debito_by_factura(
 
 # Rutas para Notas de Crédito
 @router.get("/nota_credito")
-def route_get_notas_credito(request: Request, db: Session = Depends(get_db)):
+def route_get_notas_credito(
+    request: Request,
+    db: Session = Depends(get_db),
+    limit: int = Query(10, ge=1),
+    offset: int = Query(0, ge=0),
+):
     request_info = get_request_info(request)
     logger.info("Solicitud para obtener todas las notas de crédito", extra=request_info)
-    return get_all_notas_credito(db)
+    notas_credito = get_all_notas_credito(db, limit=limit, offset=offset)
+    if not notas_credito:
+        logger.warning("No se encontraron notas de crédito", extra=request_info)
+        return {"error": "No se encontraron notas de crédito"}
+    return notas_credito
 
 
 @router.get("/nota_credito/{nota_credito_id}")

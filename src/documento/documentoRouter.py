@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy.orm import Session
 from database import get_db
 from src.documento.documentoService.get_documentoService import (
@@ -23,11 +23,14 @@ router = APIRouter(prefix="/documento", tags=["Documento"])
 
 
 # Endpoints para obtener documentos
+# Endpoint para obtener todos los documentos con paginación usando query parameters
 @router.get("/")
-def get_documentos(request: Request, db: Session = Depends(get_db)):
+def get_documentos(
+    request: Request, db: Session = Depends(get_db), limit: int = Query(10, ge=1), offset: int = Query(0, ge=0)
+):
     request_info = get_request_info(request)
     logger.info("Obteniendo todos los documentos", extra=request_info)
-    return get_all_documentos(db)
+    return get_all_documentos(db, limit=limit, offset=offset)
 
 
 @router.get("/{documento_id}")
@@ -36,29 +39,54 @@ def get_documento(documento_id: int, request: Request, db: Session = Depends(get
     logger.info(f"Obteniendo documento con ID: {documento_id}", extra=request_info)
     documento = get_documento_by_id(db, documento_id)
     if not documento:
-        logger.warning(f"Documento con ID: {documento_id} no encontrado", extra=request_info)
+        logger.warning(
+            f"Documento con ID: {documento_id} no encontrado", extra=request_info
+        )
         raise HTTPException(status_code=404, detail="Documento no encontrado")
     return documento
 
 
 @router.get("/numero-control/{numero_control}")
-def get_documento_numero_control(numero_control: str, request: Request, db: Session = Depends(get_db)):
+def get_documento_numero_control(
+    numero_control: str, request: Request, db: Session = Depends(get_db)
+):
     request_info = get_request_info(request)
-    logger.info(f"Obteniendo documento con número de control: {numero_control}", extra=request_info)
+    logger.info(
+        f"Obteniendo documento con número de control: {numero_control}",
+        extra=request_info,
+    )
     documento = get_documento_by_numero_control(db, numero_control)
     if not documento:
-        logger.warning(f"Documento con número de control: {numero_control} no encontrado", extra=request_info)
+        logger.warning(
+            f"Documento con número de control: {numero_control} no encontrado",
+            extra=request_info,
+        )
         raise HTTPException(status_code=404, detail="Documento no encontrado")
     return documento
 
 
+# Endpoint para obtener documentos por ID de empresa con paginación usando query parameters
 @router.get("/empresa/{empresa_id}")
-def get_documentos_empresa_id(empresa_id: int, request: Request, db: Session = Depends(get_db)):
+def get_documentos_empresa_id(
+    empresa_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    limit: int = Query(10, ge=1),
+    offset: int = Query(0, ge=0),
+):
     request_info = get_request_info(request)
-    logger.info(f"Obteniendo documentos para la empresa con ID: {empresa_id}", extra=request_info)
-    documentos = get_documentos_by_empresa_id(db, empresa_id)
+    logger.info(
+        f"Obteniendo documentos para la empresa con ID: {empresa_id}",
+        extra=request_info,
+    )
+    documentos = get_documentos_by_empresa_id(
+        db, empresa_id, limit=limit, offset=offset
+    )
     if not documentos:
-        logger.warning(f"No se encontraron documentos para la empresa con ID: {empresa_id}", extra=request_info)
+        logger.warning(
+            f"No se encontraron documentos para la empresa con ID: {empresa_id}",
+            extra=request_info,
+        )
         raise HTTPException(
             status_code=404,
             detail="No se encontraron documentos para la empresa especificada",
@@ -66,13 +94,28 @@ def get_documentos_empresa_id(empresa_id: int, request: Request, db: Session = D
     return documentos
 
 
+# Endpoint para obtener documentos por ID de cliente con paginación usando query parameters
 @router.get("/cliente/{cliente_id}")
-def get_documentos_cliente_id(cliente_id: int, request: Request, db: Session = Depends(get_db)):
+def get_documentos_cliente_id(
+    cliente_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    limit: int = Query(10, ge=1),
+    offset: int = Query(0, ge=0),
+):
     request_info = get_request_info(request)
-    logger.info(f"Obteniendo documentos para el cliente con ID: {cliente_id}", extra=request_info)
-    documentos = get_documentos_by_cliente_id(db, cliente_id)
+    logger.info(
+        f"Obteniendo documentos para el cliente con ID: {cliente_id}",
+        extra=request_info,
+    )
+    documentos = get_documentos_by_cliente_id(
+        db, cliente_id, limit=limit, offset=offset
+    )
     if not documentos:
-        logger.warning(f"No se encontraron documentos para el cliente con ID: {cliente_id}", extra=request_info)
+        logger.warning(
+            f"No se encontraron documentos para el cliente con ID: {cliente_id}",
+            extra=request_info,
+        )
         raise HTTPException(
             status_code=404,
             detail="No se encontraron documentos para el cliente especificado",
@@ -82,7 +125,9 @@ def get_documentos_cliente_id(cliente_id: int, request: Request, db: Session = D
 
 # Endpoints para crear documentos
 @router.post("/create/factura")
-def create_factura_endpoint(factura_data: FacturaSchema, request: Request, db: Session = Depends(get_db)):
+def create_factura_endpoint(
+    factura_data: FacturaSchema, request: Request, db: Session = Depends(get_db)
+):
     request_info = get_request_info(request)
     logger.info("Creando o obteniendo factura", extra=request_info)
     return get_or_create_factura(db, factura_data)
@@ -90,7 +135,11 @@ def create_factura_endpoint(factura_data: FacturaSchema, request: Request, db: S
 
 # Ruta para crear una nota de crédito
 @router.post("/create/nota-credito")
-def create_nota_credito_endpoint(nota_credito_data: NotaCreditoSchema, request: Request, db: Session = Depends(get_db)):
+def create_nota_credito_endpoint(
+    nota_credito_data: NotaCreditoSchema,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     request_info = get_request_info(request)
     logger.info("Creando o obteniendo nota de crédito", extra=request_info)
     return get_or_create_nota_credito(db, nota_credito_data)
@@ -98,7 +147,9 @@ def create_nota_credito_endpoint(nota_credito_data: NotaCreditoSchema, request: 
 
 # Ruta para crear una nota de débito
 @router.post("/create/nota-debito")
-def create_nota_debito_endpoint(nota_debito_data: NotaDebitoSchema, request: Request, db: Session = Depends(get_db)):
+def create_nota_debito_endpoint(
+    nota_debito_data: NotaDebitoSchema, request: Request, db: Session = Depends(get_db)
+):
     request_info = get_request_info(request)
     logger.info("Creando o obteniendo nota de débito", extra=request_info)
     return get_or_create_nota_debito(db, nota_debito_data)

@@ -13,6 +13,12 @@ The Facturación System is a FastAPI-based application designed to manage invoic
 - **Advanced Logging**: Custom logger with rotating file handlers and detailed request information.
 
 ## Recent Updates
+- **Version 0.6.2**:
+  - Added `limit` and `offset` parameters to multiple service functions for pagination support.
+  - Updated routers to include query parameters for pagination in endpoints.
+  - Standardized function names for clarity (e.g., `get_documentos_by_empresa_id` renamed to `get_facturas_by_empresa_id`).
+  - Enhanced consistency across services and routers for better maintainability.
+
 - **Version 0.6.1**:
   - Adjusted `subtotal_productos` to exclude discounts, aligning with the imprenta's expectations.
   - Updated JSON generation logic to include taxes in the `subtotal` field.

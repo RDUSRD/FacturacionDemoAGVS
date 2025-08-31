@@ -3,13 +3,20 @@ from src.cliente.cliModel import Cliente
 from src.cliente.clienteSchema import ClienteSchema, ClienteUpdateSchema
 
 
-def get_all_clientes(db: Session):
-    return db.query(Cliente).all()
+def get_all_clientes(db: Session, limit: int = 10, page: int = 1):
+    try:
+        offset = (page - 1) * limit
+        clientes = db.query(Cliente).offset(offset).limit(limit).all()
+        return [cliente.to_dict() for cliente in clientes]
+    except Exception as e:
+        return f"Error al obtener clientes: {e}"
 
 
 def get_cliente_by_id(db: Session, cliente_id: int):
     return db.query(Cliente).filter(Cliente.id == cliente_id).first()
 
+def get_cliente_by_documento(db: Session, documento: str):
+    return db.query(Cliente).filter(Cliente.documento == documento).first()
 
 def get_or_create_cliente(db: Session, cliente_data: ClienteSchema):
     cliente = db.query(Cliente).filter(Cliente.documento == cliente_data.documento).first()

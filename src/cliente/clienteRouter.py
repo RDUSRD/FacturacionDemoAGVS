@@ -17,10 +17,10 @@ router = APIRouter(prefix="/cliente", tags=["Cliente"])
 
 
 @router.get("/")
-def get_clientes(request: Request, db: Session = Depends(get_db)):
+def get_clientes(request: Request, db: Session = Depends(get_db), limit: int = 10, page: int = 1):
     request_info = get_request_info(request)
     logger.info("Obteniendo todos los clientes", extra=request_info)
-    return get_all_clientes(db)
+    return get_all_clientes(db, limit=limit, page=page)
 
 
 @router.get("/{cliente_id}")
@@ -49,6 +49,19 @@ def update_cliente_endpoint(
     logger.info(f"Actualizando cliente con ID: {cliente_id}", extra=request_info)
     cliente = update_cliente(db, cliente_id, cliente_data)
     if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    return cliente
+
+
+@router.get("/documento/{documento}")
+def get_cliente_by_documento(documento: str, request: Request, db: Session = Depends(get_db)):
+    from src.cliente.cliModel import Cliente  # Importar el modelo Cliente
+
+    request_info = get_request_info(request)
+    logger.info(f"Obteniendo cliente con documento: {documento}", extra=request_info)
+    cliente = db.query(Cliente).filter(Cliente.documento == documento).first()
+    if not cliente:
+        logger.warning(f"Cliente con documento: {documento} no encontrado", extra=request_info)
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     return cliente
 
