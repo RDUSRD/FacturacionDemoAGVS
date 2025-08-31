@@ -58,20 +58,7 @@ class GroupMembershipMiddleware(BaseHTTPMiddleware):
                 request.scope["path"].startswith(prefix)
                 for prefix in self.excluded_routes
             ):
-                try:
-                    return await call_next(request)
-                except Exception as e:
-                    logger.error(
-                        f"Error en call_next durante la exclusión: {str(e)}",
-                        exc_info=True,
-                        extra=get_request_info(request),
-                    )
-                    return JSONResponse(
-                        status_code=500,
-                        content={
-                            "detail": "Error interno del servidor durante la exclusión."
-                        },
-                    )
+                return await call_next(request)
 
             authorization: str = request.headers.get("Authorization", "")
             if not authorization.startswith("Bearer "):
@@ -107,10 +94,10 @@ class GroupMembershipMiddleware(BaseHTTPMiddleware):
             required_group = self.route_group_mapping.get((route, method))
             if not required_group:
                 for (pattern, m), group in self.route_group_mapping.items():
-                    if (
-                        (m == method or m == "ALL")
-                        and (pattern.endswith("}") and route.startswith(pattern.rsplit("/", 1)[0])
-                             or route.startswith(pattern))
+                    if (m == method or m == "ALL") and (
+                        pattern.endswith("}")
+                        and route.startswith(pattern.rsplit("/", 1)[0])
+                        or route.startswith(pattern)
                     ):
                         required_group = group
                         break
@@ -130,11 +117,6 @@ class GroupMembershipMiddleware(BaseHTTPMiddleware):
             request.state.user_payload = payload
             return await call_next(request)
 
-        except Exception as e:
-            logger.error(
-                f"Error en el middleware: {str(e)}", extra=get_request_info(request)
-            )
-            return JSONResponse(
-                status_code=500,
-                content={"detail": "Error interno del servidor en el middleware."},
-            )
+        except Exception:
+            # Permitir que las funciones manejen las excepciones directamente
+            raise

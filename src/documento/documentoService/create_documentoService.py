@@ -232,6 +232,8 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
     Returns:
         dict: Contiene la nota de crédito creada y el ID de la factura asociada, o un mensaje de error.
     """
+    nota_credito = None  # Inicializar la variable para evitar UnboundLocalError
+
     try:
         with db.begin():  # Transacción atómica
             # Obtener los IDs calculados
@@ -339,19 +341,22 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
 
     except IntegrityError as e:
         print(f"Error de integridad: {str(e)}")
-        rollback_manual_nota_credito(db, nota_credito.nota_credito_id)
+        if nota_credito:
+            rollback_manual_nota_credito(db, nota_credito.nota_credito_id)
         return {"error": f"Error de integridad: {str(e)}"}
 
     except ValueError as e:
         print(f"Error de validación: {str(e)}")
-        rollback_manual_nota_credito(db, nota_credito.nota_credito_id)
+        if nota_credito:
+            rollback_manual_nota_credito(db, nota_credito.nota_credito_id)
         return {"error": f"Error de validación: {str(e)}"}
 
     except Exception as e:
         error_trace = traceback.format_exc()
         print(f"Error inesperado: {str(e)}")
         print(f"Traceback del error: {error_trace}")
-        rollback_manual_nota_credito(db, nota_credito.nota_credito_id)
+        if nota_credito:
+            rollback_manual_nota_credito(db, nota_credito.nota_credito_id)
 
         return {"error": f"Error inesperado: {str(e)}", "traceback": error_trace}
 
@@ -377,6 +382,8 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
     Returns:
         dict: Contiene la nota de débito creada y el ID de la factura asociada, o un mensaje de error.
     """
+    nota_debito = None  # Inicializar la variable para evitar UnboundLocalError
+
     try:
         with db.begin():  # Transacción atómica
             # Obtener los IDs calculados
@@ -401,8 +408,16 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
 
             # Calcular totales e impuestos
             totales, modificaciones_detalles = calcular_totales_nota(
-                detalles_factura, documento_data.modif_detalles, db, True
+                detalles_factura,
+                documento_data.modif_detalles,
+                db,
+                True,
+                aplica_igtf=factura.aplica_igtf,
             )
+
+            # Ajustar la serialización de modif_documento y modif_detalles
+            modif_documento = decimal_to_float(totales)
+            modif_detalles = decimal_to_float(modificaciones_detalles)
 
             # Crear la nota de débito
             nota_debito = NotaDebito(
@@ -417,26 +432,8 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
                 descripcion=documento_data.descripcion,
                 fecha_emision=datetime.today().date(),
                 hora_emision=datetime.now().time(),
-                modif_documento={
-                    "subtotal_descuento": totales["subtotal_descuento"],
-                    "subtotal_sin_descuento": totales["subtotal_sin_descuento"],
-                    "base": totales["monto_base"],
-                    "monto_exento": totales["monto_exento"],
-                    "monto_base_general": totales["monto_base_general"],
-                    "monto_base_reducida": totales["monto_base_reducida"],
-                    "monto_base_adicional": totales["monto_base_adicional"],
-                    "iva_general": totales["iva_general"],
-                    "iva_general_monto": totales["iva_general_monto"],
-                    "iva_reducida": totales["iva_reducida"],
-                    "iva_reducida_monto": totales["iva_reducida_monto"],
-                    "iva_adicional": totales["iva_adicional"],
-                    "iva_adicional_monto": totales["iva_adicional_monto"],
-                    "base_igtf": totales["base_igtf"],
-                    "igtf": totales["igtf"],
-                    "monto_igtf": totales["monto_igtf"],
-                    "monto": totales["monto_total"],
-                },
-                modif_detalles=modificaciones_detalles,
+                modif_documento=modif_documento,  # Guardar directamente como diccionario
+                modif_detalles=modif_detalles,  # Guardar directamente como lista
             )
             db.add(nota_debito)
 
@@ -451,7 +448,7 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
                     empresa,
                     precio_bcv=obtener_dolar_bcv(db),
                     tipo_documento=2,  # Tipo de documento para nota de débito
-                    factura_relacionada_id=factura.id,  # ID de la factura relacionada
+                    factura_nro_control=factura.numero_control,  # ID de la factura relacionada
                 )
                 url_imprenta = (
                     f"{SMART_URL}/facturacion"  # Usar variable de entorno para la URL
@@ -488,19 +485,22 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
 
     except IntegrityError as e:
         print(f"Error de integridad: {str(e)}")
-        rollback_manual_nota_debito(db, nota_debito.nota_debito_id)
+        if nota_debito:
+            rollback_manual_nota_debito(db, nota_debito.nota_debito_id)
         return {"error": f"Error de integridad: {str(e)}"}
 
     except ValueError as e:
         print(f"Error de validación: {str(e)}")
-        rollback_manual_nota_debito(db, nota_debito.nota_debito_id)
+        if nota_debito:
+            rollback_manual_nota_debito(db, nota_debito.nota_debito_id)
         return {"error": f"Error de validación: {str(e)}"}
 
     except Exception as e:
         error_trace = traceback.format_exc()
         print(f"Error inesperado: {str(e)}")
         print(f"Traceback del error: {error_trace}")
-        rollback_manual_nota_debito(db, nota_debito.nota_debito_id)
+        if nota_debito:
+            rollback_manual_nota_debito(db, nota_debito.nota_debito_id)
         return {"error": f"Error inesperado: {str(e)}", "traceback": error_trace}
 
 

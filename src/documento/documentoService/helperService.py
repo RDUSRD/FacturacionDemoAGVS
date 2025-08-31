@@ -96,7 +96,7 @@ def calcular_totales(detalles, aplica_igtf, precio_bcv):
         + iva_general_monto
         + monto_base_reducida
         + iva_reducida_monto
-        + monto_base_adicional      
+        + monto_base_adicional
         + iva_adicional_monto
         + monto_exento
     )
@@ -215,7 +215,8 @@ def obtener_siguiente_id_documento(db: Session):
     try:
         # Consultar el último ID utilizado en la tabla documento usando text
         ultimo_documento_id = db.execute(text("SELECT MAX(id) FROM documento")).scalar()
-        return (ultimo_documento_id + 1) if ultimo_documento_id else 1
+        siguiente_id = (ultimo_documento_id + 1) if ultimo_documento_id else 1
+        return f"{siguiente_id:08d}"  # Formatear con 8 dígitos
     except Exception as e:
         print(f"Error al obtener el siguiente ID de documento: {str(e)}")
         raise
@@ -226,7 +227,8 @@ def obtener_siguiente_id_factura(db: Session):
     ultimo_factura_id = (
         db.query(Factura.factura_id).order_by(Factura.factura_id.desc()).first()
     )
-    return (ultimo_factura_id[0] + 1) if ultimo_factura_id else 1
+    siguiente_id = (ultimo_factura_id[0] + 1) if ultimo_factura_id else 1
+    return f"{siguiente_id:08d}"  # Formatear con 8 dígitos
 
 
 # Función para obtener el siguiente ID disponible in la tabla nota_credito
@@ -236,7 +238,8 @@ def obtener_siguiente_id_nota_credito(db: Session):
         .order_by(NotaCredito.nota_credito_id.desc())
         .first()
     )
-    return (ultimo_nota_credito_id[0] + 1) if ultimo_nota_credito_id else 1
+    siguiente_id = (ultimo_nota_credito_id[0] + 1) if ultimo_nota_credito_id else 1
+    return f"{siguiente_id:08d}"  # Formatear con 8 dígitos
 
 
 # Función para obtener el siguiente ID disponible in la tabla nota_debito
@@ -246,11 +249,14 @@ def obtener_siguiente_id_nota_debito(db: Session):
         .order_by(NotaDebito.nota_debito_id.desc())
         .first()
     )
-    return (ultimo_nota_debito_id[0] + 1) if ultimo_nota_debito_id else 1
+    siguiente_id = (ultimo_nota_debito_id[0] + 1) if ultimo_nota_debito_id else 1
+    return f"{siguiente_id:08d}"  # Formatear con 8 dígitos
 
 
 # Mover funciones relacionadas con notas de crédito y débito al helper
-def calcular_totales_nota(detalles_factura, modif_detalles, db, es_nota_debito=False, aplica_igtf=False):
+def calcular_totales_nota(
+    detalles_factura, modif_detalles, db, es_nota_debito=False, aplica_igtf=False
+):
     """
     Calcula los totales e impuestos para notas de crédito o débito basados en las modificaciones.
     Si es una nota de débito, no se valida que el producto exista en los detalles de la factura,
@@ -267,8 +273,13 @@ def calcular_totales_nota(detalles_factura, modif_detalles, db, es_nota_debito=F
     iva_reducida_monto = 0
     iva_adicional_monto = 0
     subtotal_productos = 0
+    monto_igtf = 0
 
     modificaciones_detalles = []
+
+    # Subtotales separados para exentos y no exentos
+    subtotal_no_exento = 0  # Subtotal de productos no exentos
+    subtotal_exento = 0  # Subtotal de productos exentos
 
     for mod_detalle in modif_detalles:
         # Validar que el producto exista en la tabla Producto
@@ -295,25 +306,53 @@ def calcular_totales_nota(detalles_factura, modif_detalles, db, es_nota_debito=F
         precio_unitario = Decimal(mod_detalle.get("precio_unitario", 0))
         descuento = Decimal(mod_detalle.get("descuento", 0))
 
-        total_producto = cantidad * precio_unitario
-        descuento_producto = total_producto * descuento
-        total_producto_con_descuento = total_producto - descuento_producto
-        subtotal_productos += total_producto
-        descuento_total += descuento_producto
+        total_producto = round(cantidad * precio_unitario, 4)  # Redondear a 4 decimales
+        descuento_producto = round(
+            total_producto * descuento, 4
+        )  # Redondear a 4 decimales
+        total_producto_con_descuento = round(
+            total_producto - descuento_producto, 4
+        )  # Redondear a 4 decimales
+        subtotal_productos = round(
+            subtotal_productos + total_producto, 4
+        )  # Redondear acumulado
+        descuento_total = round(
+            descuento_total + descuento_producto, 4
+        )  # Redondear acumulado
 
         if mod_detalle.get("exento", False):
-            monto_exento += total_producto_con_descuento
+            monto_exento = round(
+                monto_exento + total_producto_con_descuento, 4
+            )  # Redondear acumulado
+            subtotal_exento = round(
+                subtotal_exento + total_producto_con_descuento, 4
+            )  # Redondear acumulado
         else:
+            subtotal_no_exento = round(
+                subtotal_no_exento + total_producto_con_descuento, 4
+            )  # Redondear acumulado
             alicuota_iva = mod_detalle.get("alicuota_iva", 0)
             if alicuota_iva == 16:
-                monto_base_general += total_producto  # Base sin descuento
-                iva_general_monto += round(total_producto * Decimal("0.16"), 4)
+                monto_base_general = round(
+                    monto_base_general + total_producto, 4
+                )  # Redondear acumulado
+                iva_general_monto = round(
+                    iva_general_monto + total_producto * Decimal("0.16"), 4
+                )  # Redondear acumulado
             elif alicuota_iva == 8:
-                monto_base_reducida += total_producto  # Base sin descuento
-                iva_reducida_monto += round(total_producto * Decimal("0.08"), 4)
+                monto_base_reducida = round(
+                    monto_base_reducida + total_producto, 4
+                )  # Redondear acumulado
+                iva_reducida_monto = round(
+                    iva_reducida_monto + total_producto * Decimal("0.08"), 4
+                )  # Redondear acumulado
             elif alicuota_iva == 31:
-                monto_base_adicional += total_producto  # Base sin descuento
-                iva_adicional_monto += round(total_producto * Decimal("0.31"), 4)
+                monto_base_adicional = round(
+                    monto_base_adicional + total_producto, 4
+                )  # Redondear acumulado
+                iva_adicional_monto = round(
+                    iva_adicional_monto + total_producto * Decimal("0.31"), 4
+                )  # Redondear acumulado
 
         modificaciones_detalles.append(
             {
@@ -329,20 +368,26 @@ def calcular_totales_nota(detalles_factura, modif_detalles, db, es_nota_debito=F
             }
         )
 
-    monto_total = (
+    monto_total = round(
         monto_base_general
         + iva_general_monto
         + monto_base_reducida
         + iva_reducida_monto
         + monto_base_adicional
         + iva_adicional_monto
-        + monto_exento
+        + monto_exento,
+        4,
     )
 
     if aplica_igtf and monto_total > 0:
         monto_igtf = round(monto_total * Decimal("0.03"), 2)
 
-    total_general = monto_total + monto_igtf
+    total_general = round(monto_total + monto_igtf, 4)
+
+    # Ajustar el cálculo del subtotal acumulado para que coincida con el subtotal calculado
+    subtotal_productos = round(
+        subtotal_no_exento + subtotal_exento + descuento_total, 4
+    )  # Recalcular el subtotal acumulado sin aplicar el descuento
 
     return {
         "subtotal_productos": round(float(max(subtotal_productos, 0)), 4),
