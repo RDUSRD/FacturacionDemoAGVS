@@ -5,6 +5,7 @@ from src.cliente.clienteSchema import ClienteSchema
 from src.documento.factura.facModel import Factura
 from src.documento.factura.iva.ivaModel import iva
 from src.empresa.empresaSchema import EmpresaSchema
+from src.loggers.loggerService import get_logger, get_request_info
 
 SEND_EMAIL_SMART = os.getenv("SEND_EMAIL_SMART")
 
@@ -13,6 +14,8 @@ if SEND_EMAIL_SMART is None:
         "La variable de entorno SEND_EMAIL_SMART no está configurada."
     )
     raise exception
+
+logger = get_logger("smart_service")
 
 
 def to_float(name, value):  # Convertir a float y manejar excepciones
@@ -122,26 +125,6 @@ def generar_json_imprenta(
     return json_data
 
 
-def enviar_a_imprenta(json_data: dict, url: str):
-    print(f"Enviando a la URL: {url}")
-    try:
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {os.getenv('SMART_API_TOKEN')}",
-        }
-        # Agregar un tiempo de espera de 10 segundos
-        print(f"Datos JSON a enviar: {json_data}")
-        response = requests.post(url, json=json_data, headers=headers)
-        response.raise_for_status()  # Lanza una excepción si la respuesta no es 2xx
-        return response.json()
-    except requests.exceptions.Timeout:
-        return {
-            "error": "La solicitud a la API de imprenta excedió el tiempo de espera."
-        }
-    except requests.exceptions.RequestException as e:
-        return {"error": str(e)}
-
-
 def generar_json_imprenta_notas(
     nota,
     detalles,
@@ -151,7 +134,6 @@ def generar_json_imprenta_notas(
     tipo_documento: int,
     factura_nro_control: str,
 ):
-    print(f"detalles: {detalles}")
     # Convertir a minúsculas para evitar problemas de escritura
     tipo_cedula_lower = cliente.tipo_documento.lower()
 
@@ -226,3 +208,30 @@ def generar_json_imprenta_notas(
         "formasdepago": "",
     }
     return json_data
+
+
+def enviar_a_imprenta(json_data: dict, url: str, document_id: int):
+    try:
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {os.getenv('SMART_API_TOKEN')}",
+        }
+        # Agregar un tiempo de espera de 10 segundos
+        logger.info(
+            f"Enviando documento {document_id} a la URL: {url}"
+        )  # Loggear la petición
+        response = requests.post(url, json=json_data, headers=headers)
+        response.raise_for_status()  # Lanza una excepción si la respuesta no es 2xx
+        return response.json()
+    except requests.exceptions.Timeout:
+        logger.error(
+            "La solicitud a la API de imprenta excedió el tiempo de espera.",
+        )
+        return {
+            "error": "La solicitud a la API de imprenta excedió el tiempo de espera."
+        }
+    except requests.exceptions.RequestException as e:
+        logger.error(
+            f"Error en la solicitud a la API de imprenta: {str(e)}",
+        )
+        return {"error": str(e)}

@@ -153,7 +153,7 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                 )
                 print(f"JSON para imprenta: {json_imprenta}")
                 url_facturacion = f"{SMART_URL}/facturacion"
-                respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_facturacion)
+                respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_facturacion, factura.id)
 
                 if "success" in respuesta_imprenta and respuesta_imprenta["success"]:
                     # Actualizar los campos con los datos de la respuesta
@@ -308,7 +308,7 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
                 url_imprenta = (
                     f"{SMART_URL}/facturacion"  # Usar variable de entorno para la URL
                 )
-                respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_imprenta)
+                respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_imprenta, nota_credito.id)
 
                 print(f"Respuesta de imprenta: {respuesta_imprenta}")
                 if "success" in respuesta_imprenta and respuesta_imprenta["success"]:
@@ -453,7 +453,7 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
                 url_imprenta = (
                     f"{SMART_URL}/facturacion"  # Usar variable de entorno para la URL
                 )
-                respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_imprenta)
+                respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_imprenta, nota_debito.id)
 
                 if "success" in respuesta_imprenta and respuesta_imprenta["success"]:
                     # Actualizar los campos con los datos de la respuesta
