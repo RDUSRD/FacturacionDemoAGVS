@@ -1,7 +1,8 @@
 # Función para manejar rollback manual
 from decimal import Decimal
-from requests import Session
+from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
+import os
 
 from src.documento.factura.detalleFactura.detalleFacturaModel import DetalleFactura
 from src.documento.factura.facModel import Factura
@@ -175,7 +176,7 @@ def parse_nota_credito(nota_credito: NotaCredito) -> dict:
         "factura_id": nota_credito.factura_id,
         "fecha_emision": nota_credito.fecha_emision,
         "hora_emision": nota_credito.hora_emision,
-        "monto_credito": round(float(nota_credito.monto_credito), 4),
+        "monto_credito": round(float(getattr(nota_credito, "monto_credito", 0)), 4),
         "descripcion": nota_credito.descripcion,
         "modif_documento": nota_credito.modif_documento,
         "modif_detalles": nota_credito.modif_detalles,
@@ -198,7 +199,7 @@ def parse_nota_debito(nota_debito: NotaDebito) -> dict:
         "factura_id": nota_debito.factura_id,
         "fecha_emision": nota_debito.fecha_emision,
         "hora_emision": nota_debito.hora_emision,
-        "monto_debito": round(float(nota_debito.monto_debito), 4),
+        "monto_debito": round(float(getattr(nota_debito, "monto_debito", 0)), 4),
         "descripcion": nota_debito.descripcion,
         "modif_documento": nota_debito.modif_documento,
         "modif_detalles": nota_debito.modif_detalles,
@@ -209,10 +210,29 @@ def parse_nota_debito(nota_debito: NotaDebito) -> dict:
     }
 
 
-# Agregar funciones auxiliares para obtener el siguiente ID disponible
+# Agregar soporte para manejar IDs consecutivos con una variable de entorno
+# Ajustar para que el siguiente número consecutivo sea el siguiente al ID manual
+
+# Ajustar para que el ID manual solo se use una vez por reinicio
+
+# Variable auxiliar para controlar el uso del ID manual
+id_manual_usado = {
+    "documento": False,
+    "factura": False,
+    "nota_credito": False,
+    "nota_debito": False,
+}
+
 # Función para obtener el siguiente ID disponible en la tabla documento
 def obtener_siguiente_id_documento(db: Session):
+    global id_manual_usado
     try:
+        # Leer variable de entorno para ID manual
+        id_manual = os.getenv("MANUAL_DOCUMENT_ID")
+        if id_manual and id_manual.lower() != "false" and not id_manual_usado["documento"]:
+            id_manual_usado["documento"] = True  # Marcar como usado
+            return f"{int(id_manual) + 1:08d}"  # Formatear con 8 dígitos y sumar 1
+
         # Consultar el último ID utilizado en la tabla documento usando text
         ultimo_documento_id = db.execute(text("SELECT MAX(id) FROM documento")).scalar()
         siguiente_id = (ultimo_documento_id + 1) if ultimo_documento_id else 1
@@ -224,33 +244,66 @@ def obtener_siguiente_id_documento(db: Session):
 
 # Función para obtener el siguiente ID disponible en la tabla factura
 def obtener_siguiente_id_factura(db: Session):
-    ultimo_factura_id = (
-        db.query(Factura.factura_id).order_by(Factura.factura_id.desc()).first()
-    )
-    siguiente_id = (ultimo_factura_id[0] + 1) if ultimo_factura_id else 1
-    return f"{siguiente_id:08d}"  # Formatear con 8 dígitos
+    global id_manual_usado
+    try:
+        # Leer variable de entorno para ID manual
+        id_manual = os.getenv("MANUAL_FACTURA_ID")
+        if id_manual and id_manual.lower() != "false" and not id_manual_usado["factura"]:
+            id_manual_usado["factura"] = True  # Marcar como usado
+            return f"{int(id_manual) + 1:08d}"  # Formatear con 8 dígitos y sumar 1
+
+        ultimo_factura_id = (
+            db.query(Factura.factura_id).order_by(Factura.factura_id.desc()).first()
+        )
+        siguiente_id = (ultimo_factura_id[0] + 1) if ultimo_factura_id else 1
+        return f"{siguiente_id:08d}"  # Formatear con 8 dígitos
+    except Exception as e:
+        print(f"Error al obtener el siguiente ID de factura: {str(e)}")
+        raise
 
 
-# Función para obtener el siguiente ID disponible in la tabla nota_credito
+# Función para obtener el siguiente ID disponible en la tabla nota_credito
 def obtener_siguiente_id_nota_credito(db: Session):
-    ultimo_nota_credito_id = (
-        db.query(NotaCredito.nota_credito_id)
-        .order_by(NotaCredito.nota_credito_id.desc())
-        .first()
-    )
-    siguiente_id = (ultimo_nota_credito_id[0] + 1) if ultimo_nota_credito_id else 1
-    return f"{siguiente_id:08d}"  # Formatear con 8 dígitos
+    global id_manual_usado
+    try:
+        # Leer variable de entorno para ID manual
+        id_manual = os.getenv("MANUAL_NOTA_CREDITO_ID")
+        if id_manual and id_manual.lower() != "false" and not id_manual_usado["nota_credito"]:
+            id_manual_usado["nota_credito"] = True  # Marcar como usado
+            return f"{int(id_manual) + 1:08d}"  # Formatear con 8 dígitos y sumar 1
+
+        ultimo_nota_credito_id = (
+            db.query(NotaCredito.nota_credito_id)
+            .order_by(NotaCredito.nota_credito_id.desc())
+            .first()
+        )
+        siguiente_id = (ultimo_nota_credito_id[0] + 1) if ultimo_nota_credito_id else 1
+        return f"{siguiente_id:08d}"  # Formatear con 8 dígitos
+    except Exception as e:
+        print(f"Error al obtener el siguiente ID de nota de crédito: {str(e)}")
+        raise
 
 
-# Función para obtener el siguiente ID disponible in la tabla nota_debito
+# Función para obtener el siguiente ID disponible en la tabla nota_debito
 def obtener_siguiente_id_nota_debito(db: Session):
-    ultimo_nota_debito_id = (
-        db.query(NotaDebito.nota_debito_id)
-        .order_by(NotaDebito.nota_debito_id.desc())
-        .first()
-    )
-    siguiente_id = (ultimo_nota_debito_id[0] + 1) if ultimo_nota_debito_id else 1
-    return f"{siguiente_id:08d}"  # Formatear con 8 dígitos
+    global id_manual_usado
+    try:
+        # Leer variable de entorno para ID manual
+        id_manual = os.getenv("MANUAL_NOTA_DEBITO_ID")
+        if id_manual and id_manual.lower() != "false" and not id_manual_usado["nota_debito"]:
+            id_manual_usado["nota_debito"] = True  # Marcar como usado
+            return f"{int(id_manual) + 1:08d}"  # Formatear con 8 dígitos y sumar 1
+
+        ultimo_nota_debito_id = (
+            db.query(NotaDebito.nota_debito_id)
+            .order_by(NotaDebito.nota_debito_id.desc())
+            .first()
+        )
+        siguiente_id = (ultimo_nota_debito_id[0] + 1) if ultimo_nota_debito_id else 1
+        return f"{siguiente_id:08d}"  # Formatear con 8 dígitos
+    except Exception as e:
+        print(f"Error al obtener el siguiente ID de nota de débito: {str(e)}")
+        raise
 
 
 # Mover funciones relacionadas con notas de crédito y débito al helper

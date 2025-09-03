@@ -49,7 +49,7 @@ The project requires the following Python packages:
 
 ## Environment Variables
 The application uses the following environment variables:
-- `SQLALCHEMY_DATABASE_URL`: Database connection URL.
+- `SQLALCHEMY_DATABASE_URL`: Database connection URL (e.g., `postgresql://user:password@db:5432/database_name`).
 - `AUTHENTIK_URL`: Base URL for Authentik.
 - `AUTHENTIK_CLIENT_ID`: Client ID for Authentik.
 - `AUTHENTIK_CLIENT_SECRET`: Client secret for Authentik.
@@ -60,21 +60,23 @@ The application uses the following environment variables:
 - `SEND_EMAIL_SMART`: Flag to send email via SMART.
 - `POST_SMART`: Flag to enable SMART POST requests.
 - `SMART_URL`: Base URL for SMART API.
+- `SMART_API_TOKEN`: Token for SMART API authentication.
 - `RESET_DB`: Flag to reset the database.
 
 **Example:**
 ```env
-SQLALCHEMY_DATABASE_URL=postgresql://user:password@localhost:5432/mydatabase
+SQLALCHEMY_DATABASE_URL=postgresql://user:password@db:5432/database_name
 AUTHENTIK_URL=https://auth.example.com
 AUTHENTIK_CLIENT_ID=example_client_id
 AUTHENTIK_CLIENT_SECRET=example_client_secret
 AUTHENTIK_REDIRECT_URI=http://localhost:8000/oauth/callback
-AUTHENTIK_JWKS_URL=https://example.com/application/jwks/
+AUTHENTIK_JWKS_URL=https://auth.example.com/application/jwks/
+AUTHENTIK_LOGOUT_URL=https://auth.example.com/application/end-session/
 SESSION_SECRET_KEY=example_secret_key
-AUTHENTIK_LOGOUT_URL=https://example.com/application/end-session/
 SEND_EMAIL_SMART=false
-POST_SMART=false
-SMART_URL=http://example.com/api
+POST_SMART=true
+SMART_URL=https://api.example.com/
+SMART_API_TOKEN=example_token
 RESET_DB=false
 ```
 
