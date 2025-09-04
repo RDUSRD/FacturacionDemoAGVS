@@ -66,7 +66,7 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
         with db.begin():  # Transacción atómica
             # Obtener los IDs calculados
             documento_id = obtener_siguiente_id_documento(db)
-            factura_id = obtener_siguiente_id_factura(db)
+            factura_id = obtener_siguiente_id_factura(db)            
 
             # Validar existencia del pedido
             pedido = validar_existencia(db, Pedido, documento_data.pedido_id, "Pedido")
@@ -98,7 +98,6 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
             )
             db.add(factura)
             db.flush()  # Sincronizar para obtener el ID de la factura sin confirmar la transacción
-            db.refresh(factura)  # Refrescar para obtener el ID generado
 
             # Calcular totales e impuestos
             totales = calcular_totales(pedido.detalles, factura.aplica_igtf, precio_bcv)
@@ -153,7 +152,9 @@ def get_or_create_factura(db: Session, documento_data: FacturaSchema):
                 )
                 print(f"JSON para imprenta: {json_imprenta}")
                 url_facturacion = f"{SMART_URL}/facturacion"
-                respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_facturacion, factura.id)
+                respuesta_imprenta = enviar_a_imprenta(
+                    json_imprenta, url_facturacion, factura.id
+                )
 
                 if "success" in respuesta_imprenta and respuesta_imprenta["success"]:
                     # Actualizar los campos con los datos de la respuesta
@@ -308,7 +309,9 @@ def get_or_create_nota_credito(db: Session, documento_data: NotaCreditoSchema):
                 url_imprenta = (
                     f"{SMART_URL}/facturacion"  # Usar variable de entorno para la URL
                 )
-                respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_imprenta, nota_credito.id)
+                respuesta_imprenta = enviar_a_imprenta(
+                    json_imprenta, url_imprenta, nota_credito.id
+                )
 
                 print(f"Respuesta de imprenta: {respuesta_imprenta}")
                 if "success" in respuesta_imprenta and respuesta_imprenta["success"]:
@@ -453,7 +456,9 @@ def get_or_create_nota_debito(db: Session, documento_data: NotaDebitoSchema):
                 url_imprenta = (
                     f"{SMART_URL}/facturacion"  # Usar variable de entorno para la URL
                 )
-                respuesta_imprenta = enviar_a_imprenta(json_imprenta, url_imprenta, nota_debito.id)
+                respuesta_imprenta = enviar_a_imprenta(
+                    json_imprenta, url_imprenta, nota_debito.id
+                )
 
                 if "success" in respuesta_imprenta and respuesta_imprenta["success"]:
                     # Actualizar los campos con los datos de la respuesta
